@@ -285,7 +285,7 @@
             });
 
             const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d', { willReadFrequently: true });
+            const ctx = canvas.getContext('2d');
             canvas.width = videoWidth;
             canvas.height = videoHeight;
 
@@ -293,8 +293,8 @@
                 if (!isRecording) return;
                 try {
                     ctx.drawImage(previewVideo, 0, 0, canvas.width, canvas.height);
-                    // The gif.js library expects the canvas context itself, not the raw pixel data.
-                    gifRecorder.addFrame(ctx, { copy: true, delay: 100 });
+                    // The gif.js library expects the canvas element itself.
+                    gifRecorder.addFrame(canvas, { copy: true, delay: 100 });
                 } catch (e) {
                     console.error("Error adding frame to GIF:", e);
                     // Stop recording on error to prevent an infinite loop of errors
