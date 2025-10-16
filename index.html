@@ -146,7 +146,7 @@
             try {
                 const includeAudio = document.getElementById('includeAudio').checked;
 
-                const videoStream = await navigator.mediaDevices.getDisplayMedia({
+                stream = await navigator.mediaDevices.getDisplayMedia({
                     video: { width: 1920, height: 1080, frameRate: 30 }
                 });
 
@@ -154,9 +154,7 @@
                     const audioStream = await navigator.mediaDevices.getUserMedia({
                         audio: true
                     });
-                    stream = new MediaStream([...videoStream.getTracks(), ...audioStream.getTracks()]);
-                } else {
-                    stream = videoStream;
+                    audioStream.getAudioTracks().forEach(track => stream.addTrack(track));
                 }
 
                 previewVideo.srcObject = stream;
