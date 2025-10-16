@@ -62,6 +62,10 @@
                         <input type="radio" name="format" value="mp4" class="form-radio h-5 w-5 text-blue-500 bg-gray-600 border-gray-500 focus:ring-blue-500" checked>
                         <span class="ml-2 text-white">MP4</span>
                     </label>
+                    <label class="flex items-center cursor-pointer ml-6">
+                        <input id="includeAudio" type="checkbox" class="form-checkbox h-5 w-5 text-green-500 bg-gray-600 border-gray-500 focus:ring-green-500">
+                        <span class="ml-2 text-white">Include Microphone</span>
+                    </label>
                 </div>
             </div>
             <!-- Action Buttons -->
@@ -140,14 +144,21 @@
         async function startCapture() {
             resetState();
             try {
+                const includeAudio = document.getElementById('includeAudio').checked;
+
                 const videoStream = await navigator.mediaDevices.getDisplayMedia({
                     video: { width: 1920, height: 1080, frameRate: 30 }
                 });
-                const audioStream = await navigator.mediaDevices.getUserMedia({
-                    audio: true
-                });
 
-                stream = new MediaStream([...videoStream.getTracks(), ...audioStream.getTracks()]);
+                if (includeAudio) {
+                    const audioStream = await navigator.mediaDevices.getUserMedia({
+                        audio: true
+                    });
+                    stream = new MediaStream([...videoStream.getTracks(), ...audioStream.getTracks()]);
+                } else {
+                    stream = videoStream;
+                }
+
                 previewVideo.srcObject = stream;
                 // 'loadedmetadata' event ensures video dimensions are available before recording.
                 previewVideo.onloadedmetadata = () => {
