@@ -145,18 +145,24 @@
             resetState();
             try {
                 const includeAudio = document.getElementById('includeAudio').checked;
+                let audioStream = null;
+                if (includeAudio) {
+                    audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                }
 
-                stream = await navigator.mediaDevices.getDisplayMedia({
+                const videoStream = await navigator.mediaDevices.getDisplayMedia({
                     video: { width: 1920, height: 1080, frameRate: 30 }
                 });
 
-                if (includeAudio) {
-                    const audioStream = await navigator.mediaDevices.getUserMedia({
-                        audio: true
-                    });
-                    audioStream.getAudioTracks().forEach(track => stream.addTrack(track));
+                if (includeAudio && audioStream) {
+                    const audioTrack = audioStream.getAudioTracks()[0];
+                    videoStream.addTrack(audioTrack);
+                    stream = videoStream;
+                } else {
+                    stream = videoStream;
                 }
 
+                console.log('Final stream tracks:', stream.getTracks());
                 previewVideo.srcObject = stream;
                 // 'loadedmetadata' event ensures video dimensions are available before recording.
                 previewVideo.onloadedmetadata = () => {
