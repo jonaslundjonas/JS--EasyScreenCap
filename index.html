@@ -62,10 +62,17 @@
                         <input type="radio" name="format" value="mp4" class="form-radio h-5 w-5 text-blue-500 bg-gray-600 border-gray-500 focus:ring-blue-500" checked>
                         <span class="ml-2 text-white">MP4</span>
                     </label>
-                    <label class="flex items-center cursor-pointer ml-6">
-                        <input id="includeAudio" type="checkbox" class="form-checkbox h-5 w-5 text-green-500 bg-gray-600 border-gray-500 focus:ring-green-500">
-                        <span class="ml-2 text-white">Include Microphone</span>
-                    </label>
+                    <div class="flex items-center ml-6 space-x-4">
+                        <label class="flex items-center cursor-pointer">
+                            <input id="includeAudio" type="checkbox" class="form-checkbox h-5 w-5 text-green-500 bg-gray-600 border-gray-500 focus:ring-green-500">
+                            <span class="ml-2 text-white">Include Microphone</span>
+                        </label>
+                        <div id="audioSourceDiv" class="hidden">
+                            <select id="audioSource" name="audioSource" class="bg-gray-600 border-gray-500 text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                                <!-- Options populated by JS -->
+                            </select>
+                        </div>
+                    </div>
                 </div>
             </div>
             <!-- Action Buttons -->
@@ -117,6 +124,9 @@
         const permissionError = document.getElementById('permissionError');
         const progressArea = document.getElementById('progressArea');
         const progressBar = document.getElementById('progressBar');
+        const includeAudio = document.getElementById('includeAudio');
+        const audioSourceDiv = document.getElementById('audioSourceDiv');
+        const audioSource = document.getElementById('audioSource');
 
         let stream = null;
         let mediaRecorder = null;
@@ -137,6 +147,45 @@
         startCaptureBtn.addEventListener('click', startCapture);
         startRecordBtn.addEventListener('click', startRecording);
         stopRecordBtn.addEventListener('click', stopRecording);
+        includeAudio.addEventListener('change', async () => {
+            if (includeAudio.checked) {
+                await populateAudioDevices();
+                audioSourceDiv.classList.remove('hidden');
+            } else {
+                audioSourceDiv.classList.add('hidden');
+            }
+        });
+
+
+        async function populateAudioDevices() {
+            try {
+                // We need to request permission first to get device labels
+                await navigator.mediaDevices.getUserMedia({ audio: true });
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const audioDevices = devices.filter(device => device.kind === 'audioinput');
+
+                audioSource.innerHTML = ''; // Clear existing options
+
+                if (audioDevices.length > 0) {
+                    audioDevices.forEach(device => {
+                        const option = document.createElement('option');
+                        option.value = device.deviceId;
+                        option.text = device.label || `Microphone ${audioSource.options.length + 1}`;
+                        audioSource.appendChild(option);
+                    });
+                } else {
+                     const option = document.createElement('option');
+                     option.text = "No microphones found";
+                     audioSource.appendChild(option);
+                }
+            } catch (error) {
+                console.error("Error populating audio devices:", error);
+                // If user denies permission, hide the audio options
+                includeAudio.checked = false;
+                audioSourceDiv.classList.add('hidden');
+                statusText.textContent = "Microphone access was denied. Audio recording is disabled.";
+            }
+        }
 
         /**
          * Initiates screen capture using the getDisplayMedia API.
@@ -144,17 +193,23 @@
         async function startCapture() {
             resetState();
             try {
-                const includeAudio = document.getElementById('includeAudio').checked;
+                const includeAudioChecked = includeAudio.checked;
                 let audioStream = null;
-                if (includeAudio) {
-                    audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                if (includeAudioChecked) {
+                    const selectedAudioSource = audioSource.value;
+                    const audioConstraints = {
+                        audio: {
+                            deviceId: selectedAudioSource ? { exact: selectedAudioSource } : undefined
+                        }
+                    };
+                    audioStream = await navigator.mediaDevices.getUserMedia(audioConstraints);
                 }
 
                 const videoStream = await navigator.mediaDevices.getDisplayMedia({
                     video: { width: 1920, height: 1080, frameRate: 30 }
                 });
 
-                if (includeAudio && audioStream) {
+                if (includeAudioChecked && audioStream) {
                     const audioTrack = audioStream.getAudioTracks()[0];
                     videoStream.addTrack(audioTrack);
                     stream = videoStream;
