@@ -121,8 +121,8 @@
                         <span>End: <span id="endTimeLabel">00:00</span></span>
                     </div>
                     <div class="flex items-center space-x-2">
-                        <input type="range" id="startTimeSlider" class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer" min="0" max="100" value="0">
-                        <input type="range" id="endTimeSlider" class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer" min="0" max="100" value="100">
+                        <input type="range" id="startTimeSlider" class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer" min="0" max="1000" value="0" step="0.01">
+                        <input type="range" id="endTimeSlider" class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer" min="0" max="1000" value="1000" step="0.01">
                     </div>
                 </div>
                 <button id="trimBtn" class="btn bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg">Trim and Save</button>
@@ -156,17 +156,9 @@
         let stream = null;
         let mediaRecorder = null;
         let recordedChunks = [];
-        let gifRecorder = null;
         let isRecording = false;
         let workerURL = null;
 
-        // Create a URL for the embedded worker script
-        try {
-            const blob = new Blob([gifWorkerSource], { type: 'application/javascript' });
-            workerURL = URL.createObjectURL(blob);
-        } catch (e) {
-            console.error("Failed to create worker URL:", e);
-        }
 
         // Event Listeners
         startCaptureBtn.addEventListener('click', startCapture);
@@ -308,10 +300,6 @@
                 statusArea.classList.add('animate-pulse');
                 statusText.textContent = "Processing MP4 video...";
                 mediaRecorder.stop();
-            } else if (format === 'gif' && gifRecorder) {
-                statusText.textContent = "Encoding GIF... This may take a moment.";
-                progressArea.classList.remove('hidden');
-                gifRecorder.render();
             }
             
              if (stream) {
@@ -364,6 +352,7 @@
             startTimeSlider.max = duration;
             endTimeSlider.max = duration;
             endTimeSlider.value = duration;
+            startTimeSlider.value = 0;
 
             startTimeLabel.textContent = formatTime(0);
             endTimeLabel.textContent = formatTime(duration);
@@ -418,7 +407,8 @@
         function formatTime(seconds) {
             const minutes = Math.floor(seconds / 60);
             const secs = Math.floor(seconds % 60);
-            return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            const ms = Math.floor((seconds - (minutes * 60) - secs) * 1000);
+            return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}.${ms.toString().padStart(3, '0')}`;
         }
 
         function setupDownload(url, filename) {
@@ -471,7 +461,6 @@
             statusArea.classList.remove('animate-pulse');
             isRecording = false;
             mediaRecorder = null;
-            gifRecorder = null;
         }
 
     </script>
