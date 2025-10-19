@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EasyScreenCap - Screen Capture Tool</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
@@ -38,7 +39,7 @@
         <!-- Header -->
         <div class="text-center">
             <h1 class="text-3xl md:text-4xl font-bold text-white">EasyScreenCap</h1>
-            <p class="text-gray-400 mt-2">A simple tool to capture your screen as video (MP4) with or without sound.</p>
+            <p class="text-gray-400 mt-2">A simple tool to capture your screen as video or GIF.</p>
             <p class="text-gray-500 text-sm mt-2">written by Jonas Lund 2025</p>
         </div>
 
@@ -105,11 +106,23 @@
             </div>
         </div>
 
-         <div id="downloadArea" class="hidden text-center bg-green-900/50 p-4 rounded-lg mt-4">
-             <a id="downloadLink" class="btn bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg text-lg inline-flex items-center" download>
-                 <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                 Download File
-             </a>
+         <div id="downloadArea" class="hidden bg-green-900/50 p-4 rounded-lg mt-4 space-y-4">
+            <div class="flex justify-center">
+                 <a id="downloadLink" class="btn bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg text-lg inline-flex items-center" download>
+                     <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                     Download Original
+                 </a>
+            </div>
+            <div id="trimmer-ui" class="space-y-3">
+                <h3 class="text-lg font-semibold text-white">Trim Video</h3>
+                <div class="flex items-center justify-center space-x-2 text-sm">
+                    <label for="startTime" class="text-gray-300">Start:</label>
+                    <input type="text" id="startTime" class="bg-gray-700 text-white w-20 p-1 rounded" value="00:00">
+                    <label for="endTime" class="text-gray-300">End:</label>
+                    <input type="text" id="endTime" class="bg-gray-700 text-white w-20 p-1 rounded" value="00:00">
+                </div>
+                <button id="trimBtn" class="btn bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg">Trim and Save</button>
+            </div>
         </div>
     </div>
 
@@ -128,7 +141,12 @@
         const includeAudio = document.getElementById('includeAudio');
         const audioSourceDiv = document.getElementById('audioSourceDiv');
         const audioSource = document.getElementById('audioSource');
+        const trimBtn = document.getElementById('trimBtn');
+        const startTimeInput = document.getElementById('startTime');
+        const endTimeInput = document.getElementById('endTime');
 
+        let ffmpeg;
+        let recordedBlob;
         let stream = null;
         let mediaRecorder = null;
         let recordedChunks = [];
@@ -148,6 +166,7 @@
         startCaptureBtn.addEventListener('click', startCapture);
         startRecordBtn.addEventListener('click', startRecording);
         stopRecordBtn.addEventListener('click', stopRecording);
+        trimBtn.addEventListener('click', trimVideo);
         includeAudio.addEventListener('change', async () => {
             if (includeAudio.checked) {
                 await populateAudioDevices();
@@ -332,11 +351,62 @@
          * @param {string} url - The object URL of the file blob.
          * @param {string} filename - The default filename for the download.
          */
+        async function initializeTrimmer(blob) {
+            recordedBlob = blob;
+            if (!ffmpeg) {
+                ffmpeg = FFmpeg.createFFmpeg({ log: true });
+            }
+            if (!ffmpeg.isLoaded()) {
+                statusText.textContent = "Loading video editor...";
+                await ffmpeg.load();
+            }
+            statusText.textContent = "Playback started. Use the controls below to trim.";
+            const duration = previewVideo.duration;
+            endTimeInput.value = formatTime(duration);
+        }
+
+        async function trimVideo() {
+            statusText.textContent = "Trimming video... this may take a moment.";
+            const startTime = startTimeInput.value;
+            const endTime = endTimeInput.value;
+
+            ffmpeg.FS('writeFile', 'input.webm', await FFmpeg.fetchFile(recordedBlob));
+
+            await ffmpeg.run('-i', 'input.webm', '-ss', startTime, '-to', endTime, '-c', 'copy', 'output.webm');
+
+            const data = ffmpeg.FS('readFile', 'output.webm');
+            const trimmedBlob = new Blob([data.buffer], { type: 'video/webm' });
+            const url = URL.createObjectURL(trimmedBlob);
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'trimmed-recording.webm';
+            a.style.display = 'none';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            statusText.textContent = "Trimmed video saved.";
+        }
+
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
         function setupDownload(url, filename) {
+            previewVideo.srcObject = null;
+            previewVideo.src = url;
+            previewVideo.muted = false;
+            previewVideo.controls = true;
+            previewVideo.oncanplay = () => {
+                const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                initializeTrimmer(blob);
+            };
+
             downloadLink.href = url;
             downloadLink.download = filename;
             downloadArea.classList.remove('hidden');
-            statusText.textContent = "Your file is ready! Click the link below to download.";
             statusArea.classList.remove('animate-pulse');
         }
 
@@ -344,6 +414,11 @@
          * Resets the UI to the initial state before any capture.
          */
         function resetState() {
+            previewVideo.src = null;
+            previewVideo.removeAttribute('src');
+            previewVideo.muted = true;
+            previewVideo.controls = false;
+
             permissionError.classList.add('hidden');
             downloadArea.classList.add('hidden');
             downloadLink.href = '#';
