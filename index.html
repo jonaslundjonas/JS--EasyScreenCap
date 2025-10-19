@@ -153,6 +153,7 @@
         const startTimeLabel = document.getElementById('startTimeLabel');
         const endTimeLabel = document.getElementById('endTimeLabel');
 
+        const { createFFmpeg, fetchFile } = FFmpeg;
         let ffmpeg;
         let recordedBlob;
         let stream = null;
@@ -360,7 +361,7 @@
             endTimeLabel.textContent = formatTime(duration);
 
             if (!ffmpeg) {
-                ffmpeg = FFmpeg.createFFmpeg({ log: true });
+                ffmpeg = createFFmpeg({ log: true });
             }
             if (!ffmpeg.isLoaded()) {
                 statusText.textContent = "Loading video editor...";
@@ -388,7 +389,7 @@
 
             statusText.textContent = "Trimming video... this may take a moment.";
 
-            ffmpeg.FS('writeFile', 'input.webm', await FFmpeg.fetchFile(recordedBlob));
+            ffmpeg.FS('writeFile', 'input.webm', await fetchFile(recordedBlob));
 
             await ffmpeg.run('-i', 'input.webm', '-ss', String(startTime), '-to', String(endTime), '-c', 'copy', 'output.webm');
 
