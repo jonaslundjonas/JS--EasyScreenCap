@@ -115,11 +115,15 @@
             </div>
             <div id="trimmer-ui" class="space-y-3">
                 <h3 class="text-lg font-semibold text-white">Trim Video</h3>
-                <div class="flex items-center justify-center space-x-2 text-sm">
-                    <label for="startTime" class="text-gray-300">Start:</label>
-                    <input type="text" id="startTime" class="bg-gray-700 text-white w-20 p-1 rounded" value="00:00">
-                    <label for="endTime" class="text-gray-300">End:</label>
-                    <input type="text" id="endTime" class="bg-gray-700 text-white w-20 p-1 rounded" value="00:00">
+                <div class="space-y-2">
+                    <div class="flex justify-between text-sm text-gray-300">
+                        <span>Start: <span id="startTimeLabel">00:00</span></span>
+                        <span>End: <span id="endTimeLabel">00:00</span></span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <input type="range" id="startTimeSlider" class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer" min="0" max="100" value="0">
+                        <input type="range" id="endTimeSlider" class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer" min="0" max="100" value="100">
+                    </div>
                 </div>
                 <button id="trimBtn" class="btn bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg">Trim and Save</button>
             </div>
@@ -142,8 +146,10 @@
         const audioSourceDiv = document.getElementById('audioSourceDiv');
         const audioSource = document.getElementById('audioSource');
         const trimBtn = document.getElementById('trimBtn');
-        const startTimeInput = document.getElementById('startTime');
-        const endTimeInput = document.getElementById('endTime');
+        const startTimeSlider = document.getElementById('startTimeSlider');
+        const endTimeSlider = document.getElementById('endTimeSlider');
+        const startTimeLabel = document.getElementById('startTimeLabel');
+        const endTimeLabel = document.getElementById('endTimeLabel');
 
         let ffmpeg;
         let recordedBlob;
@@ -353,6 +359,15 @@
          */
         async function initializeTrimmer(blob) {
             recordedBlob = blob;
+            const duration = previewVideo.duration;
+
+            startTimeSlider.max = duration;
+            endTimeSlider.max = duration;
+            endTimeSlider.value = duration;
+
+            startTimeLabel.textContent = formatTime(0);
+            endTimeLabel.textContent = formatTime(duration);
+
             if (!ffmpeg) {
                 ffmpeg = FFmpeg.createFFmpeg({ log: true });
             }
@@ -361,18 +376,30 @@
                 await ffmpeg.load();
             }
             statusText.textContent = "Playback started. Use the controls below to trim.";
-            const duration = previewVideo.duration;
-            endTimeInput.value = formatTime(duration);
         }
 
+        startTimeSlider.addEventListener('input', () => {
+            startTimeLabel.textContent = formatTime(startTimeSlider.value);
+        });
+
+        endTimeSlider.addEventListener('input', () => {
+            endTimeLabel.textContent = formatTime(endTimeSlider.value);
+        });
+
         async function trimVideo() {
+            let startTime = parseFloat(startTimeSlider.value);
+            let endTime = parseFloat(endTimeSlider.value);
+
+            if (startTime >= endTime) {
+                statusText.textContent = "Start time must be less than end time.";
+                return;
+            }
+
             statusText.textContent = "Trimming video... this may take a moment.";
-            const startTime = startTimeInput.value;
-            const endTime = endTimeInput.value;
 
             ffmpeg.FS('writeFile', 'input.webm', await FFmpeg.fetchFile(recordedBlob));
 
-            await ffmpeg.run('-i', 'input.webm', '-ss', startTime, '-to', endTime, '-c', 'copy', 'output.webm');
+            await ffmpeg.run('-i', 'input.webm', '-ss', String(startTime), '-to', String(endTime), '-c', 'copy', 'output.webm');
 
             const data = ffmpeg.FS('readFile', 'output.webm');
             const trimmedBlob = new Blob([data.buffer], { type: 'video/webm' });
