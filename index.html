@@ -6,14 +6,11 @@
     <link rel="icon" href="data:,">
     <title>EasyScreenCap - Screen Capture Tool</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
         }
-        /* Custom styles for button transitions and focus states */
         .btn {
             transition: all 0.2s ease-in-out;
         }
@@ -41,14 +38,14 @@
         <!-- Header -->
         <div class="text-center">
             <h1 class="text-3xl md:text-4xl font-bold text-white">EasyScreenCap</h1>
-            <p class="text-gray-400 mt-2">A simple tool to capture your screen as video or GIF.</p>
+            <p class="text-gray-400 mt-2">A simple tool to capture your screen.</p>
             <p class="text-gray-500 text-sm mt-2">written by Jonas Lund 2025</p>
         </div>
 
-        <!-- Permissions Error Message -->
-        <div id="permissionError" class="hidden bg-red-900 border border-red-600 text-red-200 px-4 py-3 rounded-lg relative" role="alert">
-            <strong class="font-bold">Feature Unavailable!</strong>
-            <span class="block sm:inline ml-2">Screen capture is blocked in this view. Please download this HTML file and open it directly in your browser to use this tool.</span>
+        <!-- Error Message Area -->
+        <div id="errorArea" class="hidden bg-red-900 border border-red-600 text-red-200 px-4 py-3 rounded-lg relative" role="alert">
+            <strong id="errorTitle" class="font-bold">Error!</strong>
+            <span id="errorMessage" class="block sm:inline ml-2">Something went wrong.</span>
         </div>
 
         <!-- Screen Preview -->
@@ -58,39 +55,31 @@
 
         <!-- Controls -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
-            <!-- Format Selection -->
+            <!-- Options -->
             <div class="flex items-center justify-center md:justify-start bg-gray-700 p-3 rounded-lg">
-                <span class="text-gray-300 mr-4 font-medium">Save as:</span>
-                <div class="flex items-center space-x-4">
+                 <div class="flex items-center space-x-4">
                     <label class="flex items-center cursor-pointer">
-                        <input type="radio" name="format" value="mp4" class="form-radio h-5 w-5 text-blue-500 bg-gray-600 border-gray-500 focus:ring-blue-500" checked>
-                        <span class="ml-2 text-white">MP4</span>
+                        <input id="includeAudio" type="checkbox" class="form-checkbox h-5 w-5 text-green-500 bg-gray-600 border-gray-500 focus:ring-green-500">
+                        <span class="ml-2 text-white">Include Microphone</span>
                     </label>
-                    <div class="flex items-center ml-6 space-x-4">
-                        <label class="flex items-center cursor-pointer">
-                            <input id="includeAudio" type="checkbox" class="form-checkbox h-5 w-5 text-green-500 bg-gray-600 border-gray-500 focus:ring-green-500">
-                            <span class="ml-2 text-white">Include Microphone</span>
-                        </label>
-                        <div id="audioSourceDiv" class="hidden">
-                            <select id="audioSource" name="audioSource" class="bg-gray-600 border-gray-500 text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
-                                <!-- Options populated by JS -->
-                            </select>
-                        </div>
+                    <div id="audioSourceDiv" class="hidden">
+                        <select id="audioSource" class="bg-gray-600 border-gray-500 text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                        </select>
                     </div>
                 </div>
             </div>
             <!-- Action Buttons -->
             <div class="flex items-center justify-center md:justify-end space-x-3">
                 <button id="startCaptureBtn" class="btn bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
                     Start Capture
                 </button>
                 <button id="startRecordBtn" class="btn bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg disabled:bg-gray-600 disabled:opacity-50 flex items-center" disabled>
-                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.55-1.52A2 2 0 0121 10.36v3.28a2 2 0 01-1.45 1.88L15 17M15 10V4a2 2 0 00-2-2h-2a2 2 0 00-2 2v6h7z"></path></svg>
+                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.55-1.52A2 2 0 0121 10.36v3.28a2 2 0 01-1.45 1.88L15 17M15 10V4a2 2 0 00-2-2h-2a2 2 0 00-2 2v6h7z"></path></svg>
                     Start Record
                 </button>
                 <button id="stopRecordBtn" class="btn bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg hidden flex items-center">
-                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1V8a1 1 0 00-1-1H8z" clip-rule="evenodd"></path></svg>
+                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1V8a1 1 0 00-1-1H8z" clip-rule="evenodd"></path></svg>
                     Stop Record
                 </button>
             </div>
@@ -98,7 +87,7 @@
 
         <!-- Status & Download Area -->
         <div id="statusArea" class="text-center bg-gray-700/50 p-4 rounded-lg min-h-[70px] flex items-center justify-center">
-            <p id="statusText" class="text-gray-300">1. Click 'Start Capture' and select a screen, window, or tab to share.</p>
+            <p id="statusText" class="text-gray-300">1. Click 'Start Capture' and select a screen to share.</p>
         </div>
 
         <!-- Progress Bar Area -->
@@ -111,23 +100,9 @@
          <div id="downloadArea" class="hidden bg-green-900/50 p-4 rounded-lg mt-4 space-y-4">
             <div class="flex justify-center">
                  <a id="downloadLink" class="btn bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg text-lg inline-flex items-center" download>
-                     <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                     Download Original
+                     <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                     Download Video
                  </a>
-            </div>
-            <div id="trimmer-ui" class="space-y-3">
-                <h3 class="text-lg font-semibold text-white">Trim Video</h3>
-                <div class="space-y-2">
-                    <div class="flex justify-between text-sm text-gray-300">
-                        <span>Start: <span id="startTimeLabel">00:00</span></span>
-                        <span>End: <span id="endTimeLabel">00:00</span></span>
-                    </div>
-                    <div class="flex items-center space-x-2">
-                        <input type="range" id="startTimeSlider" class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer" min="0" max="1000" value="0" step="0.01">
-                        <input type="range" id="endTimeSlider" class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer" min="0" max="1000" value="1000" step="0.01">
-                    </div>
-                </div>
-                <button id="trimBtn" class="btn bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg">Trim and Save</button>
             </div>
         </div>
     </div>
@@ -141,52 +116,61 @@
         const statusArea = document.getElementById('statusArea');
         const downloadArea = document.getElementById('downloadArea');
         const downloadLink = document.getElementById('downloadLink');
-        const permissionError = document.getElementById('permissionError');
+        const errorArea = document.getElementById('errorArea');
+        const errorTitle = document.getElementById('errorTitle');
+        const errorMessage = document.getElementById('errorMessage');
         const progressArea = document.getElementById('progressArea');
         const progressBar = document.getElementById('progressBar');
         const includeAudio = document.getElementById('includeAudio');
         const audioSourceDiv = document.getElementById('audioSourceDiv');
         const audioSource = document.getElementById('audioSource');
-        const trimBtn = document.getElementById('trimBtn');
-        const startTimeSlider = document.getElementById('startTimeSlider');
-        const endTimeSlider = document.getElementById('endTimeSlider');
-        const startTimeLabel = document.getElementById('startTimeLabel');
-        const endTimeLabel = document.getElementById('endTimeLabel');
 
-        const { createFFmpeg, fetchFile } = FFmpeg;
-        let ffmpeg;
         let recordedBlob;
         let stream = null;
         let mediaRecorder = null;
         let recordedChunks = [];
         let isRecording = false;
-        let workerURL = null;
 
-
-        // Event Listeners
+        // --- Event Listeners ---
         startCaptureBtn.addEventListener('click', startCapture);
         startRecordBtn.addEventListener('click', startRecording);
         stopRecordBtn.addEventListener('click', stopRecording);
-        trimBtn.addEventListener('click', trimVideo);
+
         includeAudio.addEventListener('change', async () => {
             if (includeAudio.checked) {
-                await populateAudioDevices();
-                audioSourceDiv.classList.remove('hidden');
+                const success = await populateAudioDevices();
+                if (success) {
+                    audioSourceDiv.classList.remove('hidden');
+                } else {
+                    // If it fails, populateAudioDevices already showed the error and unchecked the box.
+                    audioSourceDiv.classList.add('hidden');
+                }
             } else {
                 audioSourceDiv.classList.add('hidden');
             }
         });
 
+        // --- Core Functions ---
+
+        function showError(title, message) {
+            errorTitle.textContent = title;
+            errorMessage.textContent = message;
+            errorArea.classList.remove('hidden');
+        }
+
+        function hideError() {
+            errorArea.classList.add('hidden');
+        }
 
         async function populateAudioDevices() {
+            hideError();
             try {
-                // We need to request permission first to get device labels
-                await navigator.mediaDevices.getUserMedia({ audio: true });
+                const tempStream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 const devices = await navigator.mediaDevices.enumerateDevices();
-                const audioDevices = devices.filter(device => device.kind === 'audioinput');
+                const audioDevices = devices.filter(d => d.kind === 'audioinput');
+                tempStream.getTracks().forEach(track => track.stop());
 
-                audioSource.innerHTML = ''; // Clear existing options
-
+                audioSource.innerHTML = '';
                 if (audioDevices.length > 0) {
                     audioDevices.forEach(device => {
                         const option = document.createElement('option');
@@ -194,278 +178,145 @@
                         option.text = device.label || `Microphone ${audioSource.options.length + 1}`;
                         audioSource.appendChild(option);
                     });
+                    return true;
                 } else {
-                     const option = document.createElement('option');
-                     option.text = "No microphones found";
-                     audioSource.appendChild(option);
+                    showError("No Microphones Found", "No audio input devices were found.");
+                    includeAudio.checked = false;
+                    return false;
                 }
             } catch (error) {
                 console.error("Error populating audio devices:", error);
-                // If user denies permission, hide the audio options
+                if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+                     showError("Microphone Access Denied", "You must grant microphone permission to record audio.");
+                } else {
+                     showError("Audio Error", `An unexpected error occurred: ${error.message}`);
+                }
                 includeAudio.checked = false;
-                audioSourceDiv.classList.add('hidden');
-                statusText.textContent = "Microphone access was denied. Audio recording is disabled.";
+                return false;
             }
         }
 
-        /**
-         * Initiates screen capture using the getDisplayMedia API.
-         */
         async function startCapture() {
             resetState();
-            try {
-                const includeAudioChecked = includeAudio.checked;
-                let audioStream = null;
-                if (includeAudioChecked) {
-                    const selectedAudioSource = audioSource.value;
-                    const audioConstraints = {
-                        audio: {
-                            deviceId: selectedAudioSource ? { exact: selectedAudioSource } : undefined
-                        }
-                    };
-                    audioStream = await navigator.mediaDevices.getUserMedia(audioConstraints);
-                }
+            let audioStream = null;
+            let videoStream = null;
 
-                const videoStream = await navigator.mediaDevices.getDisplayMedia({
+            if (includeAudio.checked) {
+                 if (audioSource.options.length === 0) {
+                    const success = await populateAudioDevices();
+                    if (!success) return;
+                }
+                try {
+                    const selectedAudioSource = audioSource.value;
+                    audioStream = await navigator.mediaDevices.getUserMedia({
+                        audio: { deviceId: { exact: selectedAudioSource } }
+                    });
+                } catch (error) {
+                    console.error("Could not get audio stream:", error);
+                    showError("Audio Stream Error", "Could not start audio source. It might be in use by another application.");
+                    return;
+                }
+            }
+
+            try {
+                videoStream = await navigator.mediaDevices.getDisplayMedia({
                     video: { width: 1920, height: 1080, frameRate: 30 }
                 });
-
-                if (includeAudioChecked && audioStream) {
-                    const audioTrack = audioStream.getAudioTracks()[0];
-                    videoStream.addTrack(audioTrack);
-                    stream = videoStream;
-                } else {
-                    stream = videoStream;
-                }
-
-                console.log('Final stream tracks:', stream.getTracks());
-                previewVideo.srcObject = stream;
-                // 'loadedmetadata' event ensures video dimensions are available before recording.
-                previewVideo.onloadedmetadata = () => {
-                    statusText.textContent = "2. Ready to record. Click 'Start Record'.";
-                    startRecordBtn.disabled = false;
-                };
-
-                stream.getVideoTracks()[0].onended = () => {
-                     statusText.textContent = "Capture stopped. Click 'Start Capture' to begin again.";
-                     resetToCaptureState();
-                };
-
-                startCaptureBtn.disabled = true;
-                document.querySelectorAll('input[name="format"]').forEach(radio => radio.disabled = false);
-
             } catch (error) {
                 console.error("Error starting screen capture:", error);
-                if (error.name === 'NotAllowedError') {
-                    statusText.textContent = "Screen capture permission was denied due to browser policy.";
-                    permissionError.classList.remove('hidden');
-                } else {
-                    statusText.textContent = "An error occurred starting screen capture. Please check the console for details.";
-                }
-            }
-        }
-
-        /**
-         * Starts the recording process based on the selected format (MP4 or GIF).
-         */
-        function startRecording() {
-            if (!stream || !previewVideo.srcObject) {
-                statusText.textContent = "Please start screen capture first.";
+                if (audioStream) audioStream.getTracks().forEach(t => t.stop());
+                showError("Screen Share Denied", "You must grant permission to share your screen.");
                 return;
             }
-            
-            const format = document.querySelector('input[name="format"]:checked').value;
-            recordedChunks = [];
-            isRecording = true;
 
-            if (format === 'mp4') {
-                startMp4Recording();
-            }
+            const finalStream = new MediaStream([...videoStream.getTracks(), ...(audioStream ? audioStream.getTracks() : [])]);
+            stream = finalStream;
 
-            previewVideo.parentElement.classList.add('glowing-border');
-            statusText.textContent = `Recording in progress... (Format: ${format.toUpperCase()})`;
-            startRecordBtn.classList.add('hidden');
-            stopRecordBtn.classList.remove('hidden');
-            startRecordBtn.disabled = true;
-            document.querySelectorAll('input[name="format"]').forEach(radio => radio.disabled = true);
+            previewVideo.srcObject = stream;
+            previewVideo.onloadedmetadata = () => {
+                statusText.textContent = "2. Ready to record. Click 'Start Record'.";
+                startRecordBtn.disabled = false;
+            };
+
+            stream.getVideoTracks()[0].onended = () => {
+                statusText.textContent = "Capture stopped. Click 'Start Capture' to begin again.";
+                resetToCaptureState();
+            };
+
+            startCaptureBtn.disabled = true;
         }
 
-        /**
-         * Stops the current recording and processes the output file.
-         */
+        function startRecording() {
+            if (!stream) return;
+            recordedChunks = [];
+            isRecording = true;
+            
+            const options = { mimeType: 'video/webm; codecs=vp9' };
+            mediaRecorder = new MediaRecorder(stream, options);
+
+            mediaRecorder.ondataavailable = event => {
+                if (event.data.size > 0) recordedChunks.push(event.data);
+            };
+
+            mediaRecorder.onstop = () => {
+                const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                setupDownload(blob);
+                resetToCaptureState();
+            };
+
+            mediaRecorder.start();
+
+            previewVideo.parentElement.classList.add('glowing-border');
+            statusText.textContent = `Recording in progress...`;
+            startRecordBtn.classList.add('hidden');
+            stopRecordBtn.classList.remove('hidden');
+        }
+
         function stopRecording() {
             if (!isRecording) return;
-            isRecording = false; // Signal all loops to stop
-
-            const format = document.querySelector('input[name="format"]:checked').value;
-
-            if (format === 'mp4' && mediaRecorder) {
-                statusArea.classList.add('animate-pulse');
-                statusText.textContent = "Processing MP4 video...";
-                mediaRecorder.stop();
-            }
-            
-             if (stream) {
+            isRecording = false;
+            if (mediaRecorder) mediaRecorder.stop();
+            if (stream) {
                 stream.getTracks().forEach(track => track.stop());
                 previewVideo.srcObject = null;
             }
-
-            // Visually reset buttons immediately for better UX
-            startRecordBtn.classList.remove('hidden');
-            stopRecordBtn.classList.add('hidden');
-        }
-        
-        /**
-         * Configures and starts MediaRecorder for MP4.
-         */
-        function startMp4Recording() {
-            const options = { mimeType: 'video/webm; codecs=vp9' };
-            if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-                 options.mimeType = 'video/webm; codecs=vp8';
-                 if(!MediaRecorder.isTypeSupported(options.mimeType)) {
-                     options.mimeType = 'video/webm';
-                 }
-            }
-
-            mediaRecorder = new MediaRecorder(stream, options);
-            mediaRecorder.ondataavailable = event => {
-                if (event.data.size > 0) {
-                    recordedChunks.push(event.data);
-                }
-            };
-            mediaRecorder.onstop = () => {
-                const blob = new Blob(recordedChunks, { type: 'video/webm' });
-                const url = URL.createObjectURL(blob);
-                setupDownload(url, 'screen-recording.mp4');
-                resetToCaptureState();
-            };
-            mediaRecorder.start();
         }
 
-
-        /**
-         * Makes the download area visible with the correct file link.
-         * @param {string} url - The object URL of the file blob.
-         * @param {string} filename - The default filename for the download.
-         */
-        async function initializeTrimmer(blob) {
-            recordedBlob = blob;
-            const duration = previewVideo.duration;
-
-            startTimeSlider.max = duration;
-            endTimeSlider.max = duration;
-            endTimeSlider.value = duration;
-            startTimeSlider.value = 0;
-
-            startTimeLabel.textContent = formatTime(0);
-            endTimeLabel.textContent = formatTime(duration);
-
-            if (!ffmpeg) {
-                ffmpeg = createFFmpeg({ log: true });
-            }
-            if (!ffmpeg.isLoaded()) {
-                statusText.textContent = "Loading video editor...";
-                await ffmpeg.load();
-            }
-            statusText.textContent = "Playback started. Use the controls below to trim.";
-        }
-
-        startTimeSlider.addEventListener('input', () => {
-            startTimeLabel.textContent = formatTime(startTimeSlider.value);
-        });
-
-        endTimeSlider.addEventListener('input', () => {
-            endTimeLabel.textContent = formatTime(endTimeSlider.value);
-        });
-
-        async function trimVideo() {
-            let startTime = parseFloat(startTimeSlider.value);
-            let endTime = parseFloat(endTimeSlider.value);
-
-            if (startTime >= endTime) {
-                statusText.textContent = "Start time must be less than end time.";
-                return;
-            }
-
-            statusText.textContent = "Trimming video... this may take a moment.";
-
-            ffmpeg.FS('writeFile', 'input.webm', await fetchFile(recordedBlob));
-
-            await ffmpeg.run('-i', 'input.webm', '-ss', String(startTime), '-to', String(endTime), '-c', 'copy', 'output.webm');
-
-            const data = ffmpeg.FS('readFile', 'output.webm');
-            const trimmedBlob = new Blob([data.buffer], { type: 'video/webm' });
-            const url = URL.createObjectURL(trimmedBlob);
-
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'trimmed-recording.webm';
-            a.style.display = 'none';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            statusText.textContent = "Trimmed video saved.";
-        }
-
-        function formatTime(seconds) {
-            const minutes = Math.floor(seconds / 60);
-            const secs = Math.floor(seconds % 60);
-            const ms = Math.floor((seconds - (minutes * 60) - secs) * 1000);
-            return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}.${ms.toString().padStart(3, '0')}`;
-        }
-
-        function setupDownload(url, filename) {
-            previewVideo.srcObject = null;
+        function setupDownload(blob) {
+            const url = URL.createObjectURL(blob);
             previewVideo.src = url;
             previewVideo.muted = false;
             previewVideo.controls = true;
-            previewVideo.oncanplay = () => {
-                const blob = new Blob(recordedChunks, { type: 'video/webm' });
-                initializeTrimmer(blob);
-            };
 
             downloadLink.href = url;
-            downloadLink.download = filename;
+            downloadLink.download = 'screen-recording.webm';
             downloadArea.classList.remove('hidden');
-            statusArea.classList.remove('animate-pulse');
+            statusText.textContent = "Recording complete. Play back or download your video.";
         }
 
-        /**
-         * Resets the UI to the initial state before any capture.
-         */
+        // --- UI State Management ---
         function resetState() {
-            previewVideo.src = null;
-            previewVideo.removeAttribute('src');
+            hideError();
+            previewVideo.srcObject = null;
+            previewVideo.src = '';
             previewVideo.muted = true;
             previewVideo.controls = false;
-
-            permissionError.classList.add('hidden');
             downloadArea.classList.add('hidden');
-            downloadLink.href = '#';
-            statusText.textContent = "1. Click 'Start Capture' and select a screen, window, or tab to share.";
-            
+            statusText.textContent = "1. Click 'Start Capture' and select a screen to share.";
             progressArea.classList.add('hidden');
-            progressBar.style.width = '0%';
-            progressBar.textContent = '0%';
-
             resetToCaptureState();
         }
 
-        /**
-         * Resets the UI to allow for a new recording or capture.
-         */
         function resetToCaptureState() {
             previewVideo.parentElement.classList.remove('glowing-border');
             startCaptureBtn.disabled = false;
             startRecordBtn.disabled = true;
             startRecordBtn.classList.remove('hidden');
             stopRecordBtn.classList.add('hidden');
-            document.querySelectorAll('input[name="format"]').forEach(radio => radio.disabled = false);
-            statusArea.classList.remove('animate-pulse');
             isRecording = false;
             mediaRecorder = null;
+            stream = null;
         }
-
     </script>
 </body>
 </html>
