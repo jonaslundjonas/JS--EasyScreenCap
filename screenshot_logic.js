@@ -1,5 +1,4 @@
 const ssStartBtn = document.getElementById('ssStartBtn');
-const ssSnapBtn = document.getElementById('ssSnapBtn');
 const ssRetakeBtn = document.getElementById('ssRetakeBtn');
 const ssVideo = document.getElementById('screenshotVideo');
 const ssPreviewContainer = document.getElementById('screenshotPreviewContainer');
@@ -112,30 +111,30 @@ ssStartBtn.addEventListener('click', async () => {
             video: { width: 1920, height: 1080 }
         });
         ssVideo.srcObject = ssStream;
+
+        // Wait for metadata to load to ensure dimensions are correct
         ssVideo.onloadedmetadata = () => {
-            ssSnapBtn.disabled = false;
-            ssPlaceholder.classList.add('hidden');
+             // Delay slightly to ensure first frame is rendered
+             setTimeout(() => {
+                 captureAndShow();
+             }, 300);
         };
-        ssStream.getVideoTracks()[0].onended = () => {
-             stopScreenshotStream();
-             if (editorContainer.classList.contains('hidden')) {
-                ssStartBtn.disabled = false;
-                ssStartBtn.classList.remove('hidden');
-                ssSnapBtn.disabled = true;
-                ssPlaceholder.classList.remove('hidden');
-             }
-        };
+
+        // Hide button during capture attempt
         ssStartBtn.disabled = true;
-        ssStartBtn.classList.add('hidden');
+
     } catch (err) {
         console.error("Error starting capture: ", err);
         ssStartBtn.disabled = false;
-        ssStartBtn.classList.remove('hidden');
     }
 });
 
-ssSnapBtn.addEventListener('click', () => {
-    if (!ssVideo.videoWidth) return;
+function captureAndShow() {
+     if (!ssVideo.videoWidth) {
+         // Retry if not ready
+         requestAnimationFrame(captureAndShow);
+         return;
+     }
 
     editorCanvas.width = ssVideo.videoWidth;
     editorCanvas.height = ssVideo.videoHeight;
@@ -145,17 +144,22 @@ ssSnapBtn.addEventListener('click', () => {
 
     stopScreenshotStream();
 
-    ssPreviewContainer.classList.add('hidden');
+    ssPlaceholder.classList.add('hidden');
     editorContainer.classList.remove('hidden');
-    ssSnapBtn.classList.add('hidden');
+
+    ssStartBtn.classList.add('hidden');
     ssRetakeBtn.classList.remove('hidden');
     ssToolbar.classList.remove('hidden');
     ssSaveActions.classList.remove('hidden');
 
     // --- Auto-select Crop Tool for "Drag Select" experience ---
+    activateCropTool();
+}
+
+function activateCropTool() {
     const cropBtn = document.querySelector('button[data-tool="crop"]');
     if(cropBtn) {
-        // Deselect others first (though none should be selected yet)
+        // Deselect others first
         toolBtns.forEach(b => {
             b.classList.remove('bg-blue-600', 'text-white');
             b.classList.add('text-gray-300');
@@ -168,17 +172,15 @@ ssSnapBtn.addEventListener('click', () => {
         // Show instruction
         screenshotInstruction.classList.remove('hidden');
     }
-});
+}
 
 ssRetakeBtn.addEventListener('click', () => {
     editorContainer.classList.add('hidden');
-    ssPreviewContainer.classList.remove('hidden');
+    // ssPreviewContainer.classList.remove('hidden'); // We keep this hidden now
     ssToolbar.classList.add('hidden');
     ssSaveActions.classList.add('hidden');
     screenshotInstruction.classList.add('hidden');
 
-    ssSnapBtn.classList.remove('hidden');
-    ssSnapBtn.disabled = true;
     ssRetakeBtn.classList.add('hidden');
 
     ssStartBtn.classList.remove('hidden');
