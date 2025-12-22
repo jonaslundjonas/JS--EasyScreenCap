@@ -10,6 +10,7 @@ const ssToolbar = document.getElementById('ssToolbar');
 const ssSaveActions = document.getElementById('ssSaveActions');
 const ssSaveJpgBtn = document.getElementById('ssSaveJpgBtn');
 const ssSavePngBtn = document.getElementById('ssSavePngBtn');
+const screenshotInstruction = document.getElementById('screenshotInstruction');
 
 // Tools inputs
 const toolColorInput = document.getElementById('toolColor');
@@ -32,6 +33,7 @@ toolBtns.forEach(btn => {
         // Reset crop UI if switching away from crop
         if (currentTool === 'crop' && btn.dataset.tool !== 'crop') {
              applyCropBtn.classList.add('hidden');
+             screenshotInstruction.classList.add('hidden');
              // Redraw canvas to remove selection rect if any
              if (snapshot) {
                  const ctx = editorCanvas.getContext('2d');
@@ -44,6 +46,7 @@ toolBtns.forEach(btn => {
             btn.classList.remove('bg-blue-600', 'text-white');
             btn.classList.add('text-gray-300');
             applyCropBtn.classList.add('hidden');
+            screenshotInstruction.classList.add('hidden');
         } else {
             // Deselect others
             toolBtns.forEach(b => {
@@ -70,26 +73,35 @@ editorCanvas.addEventListener('click', handleCanvasClick);
 // Apply Crop
 applyCropBtn.addEventListener('click', () => {
     if (currentTool === 'crop' && selectionRect) {
-        // 1. Get the cropped image data
         const ctx = editorCanvas.getContext('2d');
+
+        // 1. Restore clean snapshot to remove selection border
+        ctx.putImageData(snapshot, 0, 0);
+
+        // 2. Get the cropped image data from clean state
         const croppedData = ctx.getImageData(selectionRect.x, selectionRect.y, selectionRect.w, selectionRect.h);
 
-        // 2. Resize canvas
+        // 3. Resize canvas
         editorCanvas.width = selectionRect.w;
         editorCanvas.height = selectionRect.h;
 
-        // 3. Put image data back
+        // 4. Put image data back
         ctx.putImageData(croppedData, 0, 0);
 
-        // 4. Reset state
+        // 5. Reset state
         selectionRect = null;
         applyCropBtn.classList.add('hidden');
-        // keep crop tool selected or deselect? Let's deselect to avoid confusion
+        screenshotInstruction.classList.add('hidden');
+
+        // Deselect tool
         currentTool = null;
         toolBtns.forEach(b => {
             b.classList.remove('bg-blue-600', 'text-white');
             b.classList.add('text-gray-300');
         });
+
+        // Update snapshot for subsequent edits
+        snapshot = ctx.getImageData(0, 0, editorCanvas.width, editorCanvas.height);
     }
 });
 
@@ -139,6 +151,23 @@ ssSnapBtn.addEventListener('click', () => {
     ssRetakeBtn.classList.remove('hidden');
     ssToolbar.classList.remove('hidden');
     ssSaveActions.classList.remove('hidden');
+
+    // --- Auto-select Crop Tool for "Drag Select" experience ---
+    const cropBtn = document.querySelector('button[data-tool="crop"]');
+    if(cropBtn) {
+        // Deselect others first (though none should be selected yet)
+        toolBtns.forEach(b => {
+            b.classList.remove('bg-blue-600', 'text-white');
+            b.classList.add('text-gray-300');
+        });
+
+        currentTool = 'crop';
+        cropBtn.classList.add('bg-blue-600', 'text-white');
+        cropBtn.classList.remove('text-gray-300');
+
+        // Show instruction
+        screenshotInstruction.classList.remove('hidden');
+    }
 });
 
 ssRetakeBtn.addEventListener('click', () => {
@@ -146,6 +175,7 @@ ssRetakeBtn.addEventListener('click', () => {
     ssPreviewContainer.classList.remove('hidden');
     ssToolbar.classList.add('hidden');
     ssSaveActions.classList.add('hidden');
+    screenshotInstruction.classList.add('hidden');
 
     ssSnapBtn.classList.remove('hidden');
     ssSnapBtn.disabled = true;
