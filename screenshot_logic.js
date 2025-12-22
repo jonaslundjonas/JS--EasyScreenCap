@@ -10,6 +10,7 @@ const ssSaveActions = document.getElementById('ssSaveActions');
 const ssSaveJpgBtn = document.getElementById('ssSaveJpgBtn');
 const ssSavePngBtn = document.getElementById('ssSavePngBtn');
 const screenshotInstruction = document.getElementById('screenshotInstruction');
+const ssDelaySelect = document.getElementById('ssDelaySelect');
 
 // Tools inputs
 const toolColorInput = document.getElementById('toolColor');
@@ -69,6 +70,10 @@ editorCanvas.addEventListener('mouseout', stopDrawing);
 // Canvas Text Input Logic
 editorCanvas.addEventListener('click', handleCanvasClick);
 
+// Paste Event
+document.addEventListener('paste', handlePaste);
+
+
 // Apply Crop
 applyCropBtn.addEventListener('click', () => {
     if (currentTool === 'crop' && selectionRect) {
@@ -107,25 +112,68 @@ applyCropBtn.addEventListener('click', () => {
 
 ssStartBtn.addEventListener('click', async () => {
     try {
+        const delay = parseInt(ssDelaySelect.value);
+        let countdownInterval;
+
+        // Visual feedback for delay if any
+        if (delay > 0) {
+            const originalText = ssStartBtn.innerHTML;
+            let secondsLeft = delay / 1000;
+
+            // We can't block the permission dialog, but we can start the delay *after* the stream is acquired?
+            // Actually, getDisplayMedia blocks JS execution in some browsers or just waits.
+            // But if we want to capture a specific state (like a menu), the delay usually happens *after* selection.
+            // Flow: Click -> Select Screen -> (Delay) -> Snap.
+        }
+
         ssStream = await navigator.mediaDevices.getDisplayMedia({
             video: { width: 1920, height: 1080 }
         });
         ssVideo.srcObject = ssStream;
 
-        // Wait for metadata to load to ensure dimensions are correct
-        ssVideo.onloadedmetadata = () => {
-             // Delay slightly to ensure first frame is rendered
-             setTimeout(() => {
-                 captureAndShow();
-             }, 300);
-        };
+        // Handle Delay
+        if (delay > 0) {
+            const originalText = ssStartBtn.innerHTML;
+            let secondsLeft = delay / 1000;
 
-        // Hide button during capture attempt
-        ssStartBtn.disabled = true;
+            ssStartBtn.disabled = true;
+            // Show countdown on button
+            ssStartBtn.textContent = `Capturing in ${secondsLeft}s...`;
+
+            countdownInterval = setInterval(() => {
+                secondsLeft--;
+                if (secondsLeft > 0) {
+                    ssStartBtn.textContent = `Capturing in ${secondsLeft}s...`;
+                } else {
+                    clearInterval(countdownInterval);
+                    ssStartBtn.innerHTML = originalText;
+                }
+            }, 1000);
+
+            // Wait for delay
+            await new Promise(resolve => setTimeout(resolve, delay));
+        }
+
+        // Wait for metadata to load to ensure dimensions are correct
+        if (ssVideo.readyState >= 2) { // 2 = HAVE_CURRENT_DATA
+             captureAndShow();
+        } else {
+            ssVideo.onloadedmetadata = () => {
+                 setTimeout(() => {
+                     captureAndShow();
+                 }, 300);
+            };
+        }
+
+        ssStartBtn.disabled = true; // Disable until retake
 
     } catch (err) {
         console.error("Error starting capture: ", err);
         ssStartBtn.disabled = false;
+        ssStartBtn.innerHTML = `
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+            New Screenshot
+        `;
     }
 });
 
@@ -143,17 +191,48 @@ function captureAndShow() {
     ctx.drawImage(ssVideo, 0, 0, editorCanvas.width, editorCanvas.height);
 
     stopScreenshotStream();
-
-    ssPlaceholder.classList.add('hidden');
-    editorContainer.classList.remove('hidden');
-
-    ssStartBtn.classList.add('hidden');
-    ssRetakeBtn.classList.remove('hidden');
-    ssToolbar.classList.remove('hidden');
-    ssSaveActions.classList.remove('hidden');
+    showEditorUI();
 
     // --- Auto-select Crop Tool for "Drag Select" experience ---
     activateCropTool();
+}
+
+function handlePaste(e) {
+    // Only handle paste if the Screenshot tab is active (checked by visibility of container?)
+    // Or just always handle it if we are on the page.
+    // Let's check if we are in the screenshot tab context.
+    const screenshotContent = document.getElementById('screenshotContent');
+    if (screenshotContent.classList.contains('hidden')) return;
+
+    const items = e.clipboardData.items;
+    for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+            const blob = items[i].getAsFile();
+            const img = new Image();
+            img.onload = function() {
+                editorCanvas.width = img.width;
+                editorCanvas.height = img.height;
+                const ctx = editorCanvas.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+                showEditorUI();
+                activateCropTool(); // Assume they might want to crop pasted images too
+            };
+            img.src = URL.createObjectURL(blob);
+            e.preventDefault(); // Prevent default paste behavior
+            break;
+        }
+    }
+}
+
+function showEditorUI() {
+    ssPlaceholder.classList.add('hidden');
+    editorContainer.classList.remove('hidden');
+
+    // Hide controls
+    ssStartBtn.parentElement.classList.add('hidden'); // Hide the button group
+    ssRetakeBtn.classList.remove('hidden');
+    ssToolbar.classList.remove('hidden');
+    ssSaveActions.classList.remove('hidden');
 }
 
 function activateCropTool() {
@@ -183,8 +262,14 @@ ssRetakeBtn.addEventListener('click', () => {
 
     ssRetakeBtn.classList.add('hidden');
 
-    ssStartBtn.classList.remove('hidden');
+    ssStartBtn.parentElement.classList.remove('hidden'); // Show button group
     ssStartBtn.disabled = false;
+    // Reset button text just in case
+    ssStartBtn.innerHTML = `
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+        New Screenshot
+    `;
+
     ssPlaceholder.classList.remove('hidden');
     ssVideo.srcObject = null;
 
