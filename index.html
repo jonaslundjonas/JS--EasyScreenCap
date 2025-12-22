@@ -39,7 +39,7 @@
         <!-- Header -->
         <div class="text-center">
             <h1 class="text-3xl md:text-4xl font-bold text-white">EasyScreenCap</h1>
-            <p class="text-gray-400 mt-2">A simple tool to capture your screen as video or GIF.</p>
+            <p class="text-gray-400 mt-2">A simple tool to capture your screen as video, GIF, or Screenshots.</p>
         </div>
 
         <!-- Permissions Error Message -->
@@ -48,64 +48,151 @@
             <span class="block sm:inline ml-2">Screen capture is blocked in this view. Please download this HTML file and open it directly in your browser to use this tool.</span>
         </div>
 
-        <!-- Screen Preview -->
-        <div class="bg-gray-900 rounded-lg overflow-hidden border-2 border-gray-700 aspect-video">
-            <video id="preview" class="w-full h-full" autoplay muted></video>
+        <!-- Tabs Navigation -->
+        <div class="flex space-x-1 rounded-xl bg-gray-900/20 p-1 mb-6">
+            <button id="tabVideo" class="w-full rounded-lg py-2.5 text-sm font-medium leading-5 text-blue-700 bg-white shadow ring-offset-2 ring-offset-blue-400 focus:outline-none focus:ring-2" onclick="switchTab('video')">Video & GIF</button>
+            <button id="tabScreenshot" class="w-full rounded-lg py-2.5 text-sm font-medium leading-5 text-gray-400 hover:text-white hover:bg-white/[0.12] focus:outline-none focus:ring-2" onclick="switchTab('screenshot')">Screenshots</button>
         </div>
 
-        <!-- Controls -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
-            <!-- Format Selection -->
-            <div class="flex items-center justify-center md:justify-start bg-gray-700 p-3 rounded-lg">
-                <span class="text-gray-300 mr-4 font-medium">Save as:</span>
-                <div class="flex items-center space-x-4">
-                    <label class="flex items-center cursor-pointer">
-                        <input type="radio" name="format" value="mp4" class="form-radio h-5 w-5 text-blue-500 bg-gray-600 border-gray-500 focus:ring-blue-500" checked>
-                        <span class="ml-2 text-white">MP4</span>
-                    </label>
-                    <label class="flex items-center cursor-pointer">
-                        <input type="radio" name="format" value="gif" class="form-radio h-5 w-5 text-pink-500 bg-gray-600 border-gray-500 focus:ring-pink-500">
-                        <span class="ml-2 text-white">GIF</span>
-                    </label>
+        <!-- Video Tab Content -->
+        <div id="videoContent" class="space-y-6">
+            <!-- Screen Preview -->
+            <div class="bg-gray-900 rounded-lg overflow-hidden border-2 border-gray-700 aspect-video">
+                <video id="preview" class="w-full h-full" autoplay muted></video>
+            </div>
+
+            <!-- Controls -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+                <!-- Format Selection -->
+                <div class="flex items-center justify-center md:justify-start bg-gray-700 p-3 rounded-lg">
+                    <span class="text-gray-300 mr-4 font-medium">Save as:</span>
+                    <div class="flex items-center space-x-4">
+                        <label class="flex items-center cursor-pointer">
+                            <input type="radio" name="format" value="mp4" class="form-radio h-5 w-5 text-blue-500 bg-gray-600 border-gray-500 focus:ring-blue-500" checked>
+                            <span class="ml-2 text-white">MP4</span>
+                        </label>
+                        <label class="flex items-center cursor-pointer">
+                            <input type="radio" name="format" value="gif" class="form-radio h-5 w-5 text-pink-500 bg-gray-600 border-gray-500 focus:ring-pink-500">
+                            <span class="ml-2 text-white">GIF</span>
+                        </label>
+                    </div>
+                </div>
+                <!-- Action Buttons -->
+                <div class="flex items-center justify-center md:justify-end space-x-3">
+                    <button id="startCaptureBtn" class="btn bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                        Start Capture
+                    </button>
+                    <button id="startRecordBtn" class="btn bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg disabled:bg-gray-600 disabled:opacity-50 flex items-center" disabled>
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.55-1.52A2 2 0 0121 10.36v3.28a2 2 0 01-1.45 1.88L15 17M15 10V4a2 2 0 00-2-2h-2a2 2 0 00-2 2v6h7z"></path></svg>
+                        Start Record
+                    </button>
+                    <button id="stopRecordBtn" class="btn bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg hidden flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1V8a1 1 0 00-1-1H8z" clip-rule="evenodd"></path></svg>
+                        Stop Record
+                    </button>
                 </div>
             </div>
-            <!-- Action Buttons -->
-            <div class="flex items-center justify-center md:justify-end space-x-3">
-                <button id="startCaptureBtn" class="btn bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
-                    Start Capture
-                </button>
-                <button id="startRecordBtn" class="btn bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg disabled:bg-gray-600 disabled:opacity-50 flex items-center" disabled>
-                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.55-1.52A2 2 0 0121 10.36v3.28a2 2 0 01-1.45 1.88L15 17M15 10V4a2 2 0 00-2-2h-2a2 2 0 00-2 2v6h7z"></path></svg>
-                    Start Record
-                </button>
-                <button id="stopRecordBtn" class="btn bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg hidden flex items-center">
-                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1V8a1 1 0 00-1-1H8z" clip-rule="evenodd"></path></svg>
-                    Stop Record
-                </button>
+
+            <!-- Status & Download Area -->
+            <div id="statusArea" class="text-center bg-gray-700/50 p-4 rounded-lg min-h-[70px] flex items-center justify-center">
+                <p id="statusText" class="text-gray-300">1. Click 'Start Capture' and select a screen, window, or tab to share.</p>
+            </div>
+
+            <!-- Progress Bar Area -->
+            <div id="progressArea" class="hidden mt-4">
+                <div class="w-full bg-gray-600 rounded-full h-4">
+                    <div id="progressBar" class="bg-blue-500 h-4 rounded-full text-xs font-medium text-blue-100 text-center p-0.5 leading-none" style="width: 0%">0%</div>
+                </div>
+            </div>
+
+            <div id="downloadArea" class="hidden text-center bg-green-900/50 p-4 rounded-lg mt-4">
+                <a id="downloadLink" class="btn bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg text-lg inline-flex items-center" download>
+                    <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    Download File
+                </a>
             </div>
         </div>
 
-        <!-- Status & Download Area -->
-        <div id="statusArea" class="text-center bg-gray-700/50 p-4 rounded-lg min-h-[70px] flex items-center justify-center">
-            <p id="statusText" class="text-gray-300">1. Click 'Start Capture' and select a screen, window, or tab to share.</p>
-        </div>
-
-        <!-- Progress Bar Area -->
-        <div id="progressArea" class="hidden mt-4">
-            <div class="w-full bg-gray-600 rounded-full h-4">
-                <div id="progressBar" class="bg-blue-500 h-4 rounded-full text-xs font-medium text-blue-100 text-center p-0.5 leading-none" style="width: 0%">0%</div>
+        <!-- Screenshot Tab Content -->
+        <div id="screenshotContent" class="hidden space-y-6">
+            <!-- Screenshot Preview Video -->
+             <div id="screenshotPreviewContainer" class="bg-gray-900 rounded-lg overflow-hidden border-2 border-gray-700 aspect-video relative">
+                <video id="screenshotVideo" class="w-full h-full" autoplay muted></video>
+                <div id="screenshotPlaceholder" class="absolute inset-0 flex items-center justify-center text-gray-500">
+                    <p>Click "Start Capture" to begin</p>
+                </div>
             </div>
-        </div>
 
-         <div id="downloadArea" class="hidden text-center bg-green-900/50 p-4 rounded-lg mt-4">
-             <a id="downloadLink" class="btn bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg text-lg inline-flex items-center" download>
-                 <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                 Download File
-             </a>
+            <!-- Editor Canvas Container (Hidden by default) -->
+            <div id="editorContainer" class="hidden bg-gray-900 rounded-lg overflow-hidden border-2 border-gray-700 relative">
+                 <canvas id="editorCanvas" class="w-full block"></canvas>
+            </div>
+
+            <!-- Controls -->
+            <div class="flex flex-wrap gap-4 items-center justify-between">
+                <!-- Capture Buttons -->
+                <div class="flex space-x-3">
+                    <button id="ssStartBtn" class="btn bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        Start Capture
+                    </button>
+                    <button id="ssSnapBtn" class="btn bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg flex items-center disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-600" disabled>
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                        Snap Screenshot
+                    </button>
+                     <button id="ssRetakeBtn" class="hidden btn bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                        Retake
+                    </button>
+                </div>
+
+                <!-- Save Buttons (Hidden initially) -->
+                 <div id="ssSaveActions" class="hidden flex space-x-3">
+                    <button id="ssSaveJpgBtn" class="btn bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg text-sm">Save JPG</button>
+                    <button id="ssSavePngBtn" class="btn bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg text-sm">Save PNG</button>
+                </div>
+            </div>
+
+            <!-- Toolbar (Hidden initially) -->
+            <div id="ssToolbar" class="hidden bg-gray-700 p-3 rounded-lg flex flex-wrap gap-2 items-center justify-center">
+                <button class="tool-btn p-2 rounded hover:bg-gray-600 text-gray-300 hover:text-white" data-tool="arrow" title="Draw Arrow">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                </button>
+                <button class="tool-btn p-2 rounded hover:bg-gray-600 text-gray-300 hover:text-white" data-tool="line" title="Draw Line">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path></svg>
+                </button>
+                <button class="tool-btn p-2 rounded hover:bg-gray-600 text-gray-300 hover:text-white" data-tool="text" title="Add Text">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path></svg>
+                </button>
+                <div class="w-px h-6 bg-gray-600 mx-2"></div>
+                <!-- Color Picker -->
+                <input type="color" id="toolColor" value="#ff0000" class="h-8 w-8 rounded cursor-pointer bg-transparent border-0" title="Color">
+                <!-- Line Width -->
+                <select id="toolWidth" class="bg-gray-800 text-white rounded p-1 border border-gray-600 text-sm">
+                    <option value="2">Thin</option>
+                    <option value="4" selected>Medium</option>
+                    <option value="8">Thick</option>
+                </select>
+                <div class="w-px h-6 bg-gray-600 mx-2"></div>
+                 <button class="tool-btn p-2 rounded hover:bg-gray-600 text-gray-300 hover:text-white" data-tool="crop" title="Crop">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+                    <!-- Simple crop icon -->
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                </button>
+                 <button class="tool-btn p-2 rounded hover:bg-gray-600 text-gray-300 hover:text-white" data-tool="blur" title="Blur">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"></path></svg>
+                </button>
+                <button class="tool-btn p-2 rounded hover:bg-gray-600 text-gray-300 hover:text-white" data-tool="pixelate" title="Pixelate">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+                </button>
+                <button id="applyCropBtn" class="hidden btn bg-green-600 hover:bg-green-700 text-white font-bold py-1 px-3 rounded text-sm ml-2">Apply Crop</button>
+            </div>
         </div>
     </div>
 
+    <script src="tab_logic.js"></script>
+    <script src="screenshot_logic.js"></script>
     <script>
         // --- Correct, Official Embedded GIF Worker Script for gif.js 0.2.0 ---
         const gifWorkerSource = `
