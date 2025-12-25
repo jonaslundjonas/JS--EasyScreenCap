@@ -39,7 +39,7 @@
         <!-- Header -->
         <div class="text-center">
             <h1 class="text-3xl md:text-4xl font-bold text-white">EasyScreenCap</h1>
-            <p class="text-gray-400 mt-2">A simple tool to capture your screen as video or GIF.</p>
+            <p class="text-gray-400 mt-2">A simple tool to capture your screen as video, GIF, or Screenshots.</p>
         </div>
 
         <!-- Permissions Error Message -->
@@ -49,61 +49,63 @@
         </div>
 
         <!-- Screen Preview -->
-        <div class="bg-gray-900 rounded-lg overflow-hidden border-2 border-gray-700 aspect-video">
-            <video id="preview" class="w-full h-full" autoplay muted></video>
-        </div>
+            <div class="bg-gray-900 rounded-lg overflow-hidden border-2 border-gray-700 aspect-video">
+                <video id="preview" class="w-full h-full" autoplay muted></video>
+            </div>
 
-        <!-- Controls -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
-            <!-- Format Selection -->
-            <div class="flex items-center justify-center md:justify-start bg-gray-700 p-3 rounded-lg">
-                <span class="text-gray-300 mr-4 font-medium">Save as:</span>
-                <div class="flex items-center space-x-4">
-                    <label class="flex items-center cursor-pointer">
-                        <input type="radio" name="format" value="mp4" class="form-radio h-5 w-5 text-blue-500 bg-gray-600 border-gray-500 focus:ring-blue-500" checked>
-                        <span class="ml-2 text-white">MP4</span>
-                    </label>
-                    <label class="flex items-center cursor-pointer">
-                        <input type="radio" name="format" value="gif" class="form-radio h-5 w-5 text-pink-500 bg-gray-600 border-gray-500 focus:ring-pink-500">
-                        <span class="ml-2 text-white">GIF</span>
-                    </label>
+            <!-- Controls -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+                <!-- Format Selection -->
+                <div class="flex items-center justify-center md:justify-start bg-gray-700 p-3 rounded-lg">
+                    <span class="text-gray-300 mr-4 font-medium">Save as:</span>
+                    <div class="flex items-center space-x-4">
+                        <label class="flex items-center cursor-pointer">
+                            <input type="radio" name="format" value="mp4" class="form-radio h-5 w-5 text-blue-500 bg-gray-600 border-gray-500 focus:ring-blue-500" checked>
+                            <span class="ml-2 text-white">MP4</span>
+                        </label>
+                        <label class="flex items-center cursor-pointer">
+                            <input type="radio" name="format" value="gif" class="form-radio h-5 w-5 text-pink-500 bg-gray-600 border-gray-500 focus:ring-pink-500">
+                            <span class="ml-2 text-white">GIF</span>
+                        </label>
+                    </div>
+                </div>
+                <!-- Action Buttons -->
+                <div class="flex items-center justify-center md:justify-end space-x-3">
+                    <button id="startCaptureBtn" class="btn bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                        Start Capture
+                    </button>
+                    <button id="startRecordBtn" class="btn bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg disabled:bg-gray-600 disabled:opacity-50 flex items-center" disabled>
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.55-1.52A2 2 0 0121 10.36v3.28a2 2 0 01-1.45 1.88L15 17M15 10V4a2 2 0 00-2-2h-2a2 2 0 00-2 2v6h7z"></path></svg>
+                        Start Record
+                    </button>
+                    <button id="stopRecordBtn" class="btn bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg hidden flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1V8a1 1 0 00-1-1H8z" clip-rule="evenodd"></path></svg>
+                        Stop Record
+                    </button>
                 </div>
             </div>
-            <!-- Action Buttons -->
-            <div class="flex items-center justify-center md:justify-end space-x-3">
-                <button id="startCaptureBtn" class="btn bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
-                    Start Capture
-                </button>
-                <button id="startRecordBtn" class="btn bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg disabled:bg-gray-600 disabled:opacity-50 flex items-center" disabled>
-                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.55-1.52A2 2 0 0121 10.36v3.28a2 2 0 01-1.45 1.88L15 17M15 10V4a2 2 0 00-2-2h-2a2 2 0 00-2 2v6h7z"></path></svg>
-                    Start Record
-                </button>
-                <button id="stopRecordBtn" class="btn bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg hidden flex items-center">
-                    <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1V8a1 1 0 00-1-1H8z" clip-rule="evenodd"></path></svg>
-                    Stop Record
-                </button>
+
+            <!-- Status & Download Area -->
+            <div id="statusArea" class="text-center bg-gray-700/50 p-4 rounded-lg min-h-[70px] flex items-center justify-center">
+                <p id="statusText" class="text-gray-300">1. Click 'Start Capture' and select a screen, window, or tab to share.</p>
+            </div>
+
+            <!-- Progress Bar Area -->
+            <div id="progressArea" class="hidden mt-4">
+                <div class="w-full bg-gray-600 rounded-full h-4">
+                    <div id="progressBar" class="bg-blue-500 h-4 rounded-full text-xs font-medium text-blue-100 text-center p-0.5 leading-none" style="width: 0%">0%</div>
+                </div>
+            </div>
+
+            <div id="downloadArea" class="hidden text-center bg-green-900/50 p-4 rounded-lg mt-4">
+                <a id="downloadLink" class="btn bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg text-lg inline-flex items-center" download>
+                    <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    Download File
+                </a>
             </div>
         </div>
 
-        <!-- Status & Download Area -->
-        <div id="statusArea" class="text-center bg-gray-700/50 p-4 rounded-lg min-h-[70px] flex items-center justify-center">
-            <p id="statusText" class="text-gray-300">1. Click 'Start Capture' and select a screen, window, or tab to share.</p>
-        </div>
-
-        <!-- Progress Bar Area -->
-        <div id="progressArea" class="hidden mt-4">
-            <div class="w-full bg-gray-600 rounded-full h-4">
-                <div id="progressBar" class="bg-blue-500 h-4 rounded-full text-xs font-medium text-blue-100 text-center p-0.5 leading-none" style="width: 0%">0%</div>
-            </div>
-        </div>
-
-         <div id="downloadArea" class="hidden text-center bg-green-900/50 p-4 rounded-lg mt-4">
-             <a id="downloadLink" class="btn bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg text-lg inline-flex items-center" download>
-                 <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                 Download File
-             </a>
-        </div>
     </div>
 
     <script>
