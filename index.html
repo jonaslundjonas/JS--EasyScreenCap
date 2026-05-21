@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EasyScreenCap - Screen Capture Tool</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
@@ -31,15 +30,54 @@
         #progressBar {
             transition: width 0.3s ease-in-out;
         }
+
+        #pointerHighlighter {
+            position: fixed;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: rgba(255, 0, 0, 0.4);
+            border: 2px solid rgba(255, 0, 0, 0.6);
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+            display: none;
+            transition: background-color 0.1s, border-color 0.1s;
+        }
+        #pointerHighlighter.clicking {
+            background-color: rgba(255, 255, 255, 0.4);
+            border-color: rgba(255, 255, 255, 0.6);
+        }
     </style>
 </head>
 <body class="bg-gray-900 text-white flex items-center justify-center min-h-screen p-4">
+
+    <!-- Mouse Pointer Highlighter -->
+    <div id="pointerHighlighter"></div>
+
 
     <div class="w-full max-w-4xl bg-gray-800 rounded-2xl shadow-2xl p-6 md:p-8 space-y-6 border border-gray-700">
         <!-- Header -->
         <div class="text-center">
             <h1 class="text-3xl md:text-4xl font-bold text-white">EasyScreenCap</h1>
-            <p class="text-gray-400 mt-2">A simple tool to capture your screen as video, GIF, or Screenshots.</p>
+            <p class="text-gray-400 mt-2">A simple tool to capture your screen as an MP4 video.</p>
+        </div>
+
+
+        <!-- Help Section -->
+        <div class="bg-gray-700 rounded-lg p-5 mt-6 border border-gray-600">
+            <h2 class="text-xl font-semibold text-white mb-3 flex items-center">
+                <svg class="w-6 h-6 mr-2 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                How to use EasyScreenCap
+            </h2>
+            <ul class="list-disc list-inside space-y-2 text-gray-300">
+                <li><strong>Step 1:</strong> Click the <span class="text-blue-400 font-medium">Start Capture</span> button.</li>
+                <li><strong>Step 2:</strong> Your browser will ask you to select what you want to share. You can choose to share your entire screen, a specific window, or a browser tab.</li>
+                <li><strong>Step 3:</strong> Once you've selected what to share, you will see a preview of it in the box above.</li>
+                <li><strong>Step 4:</strong> Click the <span class="text-green-400 font-medium">Start Record</span> button to begin recording your screen. Note that a red circle will follow your mouse pointer while recording, and it will flash white when you click.</li>
+                <li><strong>Step 5:</strong> When you're done, click <span class="text-red-400 font-medium">Stop Record</span>.</li>
+                <li><strong>Step 6:</strong> After processing, a download button will appear so you can save your MP4 video.</li>
+            </ul>
         </div>
 
         <!-- Permissions Error Message -->
@@ -55,20 +93,7 @@
 
             <!-- Controls -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
-                <!-- Format Selection -->
-                <div class="flex items-center justify-center md:justify-start bg-gray-700 p-3 rounded-lg">
-                    <span class="text-gray-300 mr-4 font-medium">Save as:</span>
-                    <div class="flex items-center space-x-4">
-                        <label class="flex items-center cursor-pointer">
-                            <input type="radio" name="format" value="mp4" class="form-radio h-5 w-5 text-blue-500 bg-gray-600 border-gray-500 focus:ring-blue-500" checked>
-                            <span class="ml-2 text-white">MP4</span>
-                        </label>
-                        <label class="flex items-center cursor-pointer">
-                            <input type="radio" name="format" value="gif" class="form-radio h-5 w-5 text-pink-500 bg-gray-600 border-gray-500 focus:ring-pink-500">
-                            <span class="ml-2 text-white">GIF</span>
-                        </label>
-                    </div>
-                </div>
+
                 <!-- Action Buttons -->
                 <div class="flex items-center justify-center md:justify-end space-x-3">
                     <button id="startCaptureBtn" class="btn bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center">
@@ -91,12 +116,7 @@
                 <p id="statusText" class="text-gray-300">1. Click 'Start Capture' and select a screen, window, or tab to share.</p>
             </div>
 
-            <!-- Progress Bar Area -->
-            <div id="progressArea" class="hidden mt-4">
-                <div class="w-full bg-gray-600 rounded-full h-4">
-                    <div id="progressBar" class="bg-blue-500 h-4 rounded-full text-xs font-medium text-blue-100 text-center p-0.5 leading-none" style="width: 0%">0%</div>
-                </div>
-            </div>
+
 
             <div id="downloadArea" class="hidden text-center bg-green-900/50 p-4 rounded-lg mt-4">
                 <a id="downloadLink" class="btn bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg text-lg inline-flex items-center" download>
@@ -109,563 +129,6 @@
     </div>
 
     <script>
-        // --- Correct, Official Embedded GIF Worker Script for gif.js 0.2.0 ---
-        const gifWorkerSource = `
-            var NeuQuant = (function() {
-                var ncycles = 100;
-                var netsize = 256;
-                var maxnetpos = netsize - 1;
-                var netbiasshift = 4;
-                var intbiasshift = 16;
-                var intbias = 1 << intbiasshift;
-                var gammashift = 10;
-                var gamma = 1 << gammashift;
-                var betashift = 10;
-                var beta = intbias >> betashift;
-                var betagamma = intbias << (gammashift - betashift);
-                var initrad = netsize >> 3;
-                var radiusbiasshift = 6;
-                var radiusbias = 1 << radiusbiasshift;
-                var initradius = initrad * radiusbias;
-                var radiusdec = 30;
-                var alphabiasshift = 10;
-                var initalpha = 1 << alphabiasshift;
-                var alphadec;
-                var radbiasshift = 8;
-                var radbias = 1 << radbiasshift;
-                var prime1 = 499;
-                var prime2 = 491;
-                var prime3 = 487;
-                var prime4 = 503;
-                var minpicturebytes = 3 * prime4;
-                var network;
-                var netindex;
-                var bias;
-                var freq;
-                var radpower;
-
-                function NeuQuant(thepixels, samplefac) {
-                    network = new Array(netsize);
-                    for (var i = 0; i < netsize; i++) {
-                        network[i] = new Array(4);
-                        var net = network[i];
-                        net[0] = net[1] = net[2] = (i << (netbiasshift + 8)) / netsize;
-                    }
-                    freq = new Array(netsize);
-                    bias = new Array(netsize);
-                    for (i = 0; i < netsize; i++) {
-                        freq[i] = intbias / netsize;
-                        bias[i] = 0;
-                    }
-                    learn(thepixels, samplefac);
-                    unbiasnet();
-                    inxbuild();
-                }
-                NeuQuant.prototype.colorMap = function() {
-                    var map = [];
-                    var index = new Array(netsize);
-                    for (var i = 0; i < netsize; i++) index[network[i][3]] = i;
-                    var k = 0;
-                    for (var l = 0; l < netsize; l++) {
-                        var j = index[l];
-                        map[k++] = network[j][0];
-                        map[k++] = network[j][1];
-                        map[k++] = network[j][2];
-                    }
-                    return map;
-                };
-                NeuQuant.prototype.lookup = function(b, g, r) {
-                    var bestd = 1000;
-                    var best = -1;
-                    var i = netindex[g];
-                    var j = i - 1;
-                    while ((i < netsize) || (j >= 0)) {
-                        if (i < netsize) {
-                            var p = network[i];
-                            var dist = p[1] - g;
-                            if (dist >= bestd) break;
-                            i++;
-                            if (dist < 0) dist = -dist;
-                            var a = p[0] - b;
-                            if (a < 0) a = -a;
-                            dist += a;
-                            if (dist < bestd) {
-                                a = p[2] - r;
-                                if (a < 0) a = -a;
-                                dist += a;
-                                if (dist < bestd) {
-                                    bestd = dist;
-                                    best = p[3];
-                                }
-                            }
-                        }
-                        if (j >= 0) {
-                            p = network[j];
-                            dist = g - p[1];
-                            if (dist >= bestd) break;
-                            j--;
-                            if (dist < 0) dist = -dist;
-                            a = p[0] - b;
-                            if (a < 0) a = -a;
-                            dist += a;
-                            if (dist < bestd) {
-                                a = p[2] - r;
-                                if (a < 0) a = -a;
-                                dist += a;
-                                if (dist < bestd) {
-                                    bestd = dist;
-                                    best = p[3];
-                                }
-                            }
-                        }
-                    }
-                    return best;
-                };
-                function learn(thepixels, samplefac) {
-                    var lengthcount = thepixels.length;
-                    alphadec = 30 + ((samplefac - 1) / 3);
-                    var samplepixels = lengthcount / (3 * samplefac);
-                    var delta = samplepixels / ncycles | 0;
-                    var alpha = initalpha;
-                    var radius = initradius;
-                    var rad = radius >> radiusbiasshift;
-                    if (rad <= 1) rad = 0;
-                    radpower = new Array(netsize >> 3);
-                    for (var i = 0; i < rad; i++) radpower[i] = alpha * (((rad * rad - i * i) * radbias) / (rad * rad));
-                    var step;
-                    if (lengthcount < minpicturebytes) {
-                        samplefac = 1;
-                        step = 3;
-                    } else if ((lengthcount % prime1) != 0) {
-                        step = 3 * prime1;
-                    } else {
-                        if ((lengthcount % prime2) != 0) step = 3 * prime2;
-                        else {
-                            if ((lengthcount % prime3) != 0) step = 3 * prime3;
-                            else step = 3 * prime4;
-                        }
-                    }
-                    var p_index = 0;
-                    var i = 0;
-                    while (i < samplepixels) {
-                        var b = (thepixels[p_index] & 0xff) << netbiasshift;
-                        var g = (thepixels[p_index + 1] & 0xff) << netbiasshift;
-                        var r = (thepixels[p_index + 2] & 0xff) << netbiasshift;
-                        var j = contest(b, g, r);
-                        altersingle(alpha, j, b, g, r);
-                        if (rad != 0) alterneigh(rad, j, b, g, r);
-                        p_index += step;
-                        if (p_index >= lengthcount) p_index -= lengthcount;
-                        i++;
-                        if (delta == 0) delta = 1;
-                        if (i % delta == 0) {
-                            alpha -= alpha / alphadec;
-                            radius -= radius / radiusdec;
-                            rad = radius >> radiusbiasshift;
-                            if (rad <= 1) rad = 0;
-                            for (j = 0; j < rad; j++) radpower[j] = alpha * (((rad * rad - j * j) * radbias) / (rad * rad));
-                        }
-                    }
-                }
-                function unbiasnet() {
-                    for (var i = 0; i < netsize; i++) {
-                        network[i][0] >>= netbiasshift;
-                        network[i][1] >>= netbiasshift;
-                        network[i][2] >>= netbiasshift;
-                        network[i][3] = i;
-                    }
-                }
-                function inxbuild() {
-                    var i, j, smallpos, smallval, p, q, previouscol, startpos;
-                    previouscol = 0;
-                    startpos = 0;
-                    for (i = 0; i < netsize; i++) {
-                        p = network[i];
-                        smallpos = i;
-                        smallval = p[1];
-                        for (j = i + 1; j < netsize; j++) {
-                            q = network[j];
-                            if (q[1] < smallval) {
-                                smallpos = j;
-                                smallval = q[1];
-                            }
-                        }
-                        q = network[smallpos];
-                        if (i != smallpos) {
-                            j = q[0]; q[0] = p[0]; p[0] = j;
-                            j = q[1]; q[1] = p[1]; p[1] = j;
-                            j = q[2]; q[2] = p[2]; p[2] = j;
-                            j = q[3]; q[3] = p[3]; p[3] = j;
-                        }
-                        if (smallval != previouscol) {
-                            netindex[previouscol] = (startpos + i) >> 1;
-                            for (j = previouscol + 1; j < smallval; j++) netindex[j] = i;
-                            previouscol = smallval;
-                            startpos = i;
-                        }
-                    }
-                    netindex[previouscol] = (startpos + maxnetpos) >> 1;
-                    for (j = previouscol + 1; j < 256; j++) netindex[j] = maxnetpos;
-                }
-                function contest(b, g, r) {
-                    var bestd = ~(1 << 31);
-                    var bestbiasd = bestd;
-                    var bestpos = -1;
-                    var bestbiaspos = bestpos;
-                    for (var i = 0; i < netsize; i++) {
-                        var n = network[i];
-                        var dist = Math.abs(n[0] - b) + Math.abs(n[1] - g) + Math.abs(n[2] - r);
-                        if (dist < bestd) { bestd = dist; bestpos = i; }
-                        var biasdist = dist - (bias[i] >> (intbiasshift - netbiasshift));
-                        if (biasdist < bestbiasd) { bestbiasd = biasdist; bestbiaspos = i; }
-                        var betafreq = (freq[i] >> betashift);
-                        freq[i] -= betafreq;
-                        bias[i] += (betafreq << gammashift);
-                    }
-                    freq[bestpos] += beta;
-                    bias[bestpos] -= betagamma;
-                    return bestbiaspos;
-                }
-                function altersingle(alpha, i, b, g, r) {
-                    var n = network[i];
-                    n[0] -= (alpha * (n[0] - b)) / initalpha;
-                    n[1] -= (alpha * (n[1] - g)) / initalpha;
-                    n[2] -= (alpha * (n[2] - r)) / initalpha;
-                }
-                function alterneigh(rad, i, b, g, r) {
-                    var lo = Math.abs(i - rad);
-                    var hi = Math.min(i + rad, netsize);
-                    var j = i + 1;
-                    var k = i - 1;
-                    var m = 1;
-                    while ((j < hi) || (k > lo)) {
-                        var a = radpower[m++];
-                        if (j < hi) {
-                            var p = network[j++];
-                            p[0] -= (a * (p[0] - b)) / radbias;
-                            p[1] -= (a * (p[1] - g)) / radbias;
-                            p[2] -= (a * (p[2] - r)) / radbias;
-                        }
-                        if (k > lo) {
-                            p = network[k--];
-                            p[0] -= (a * (p[0] - b)) / radbias;
-                            p[1] -= (a * (p[1] - g)) / radbias;
-                            p[2] -= (a * (p[2] - r)) / radbias;
-                        }
-                    }
-                }
-                return NeuQuant;
-            }());
-
-            function LZWEncoder(width, height, pixels, color_depth) {
-                var init_code_size = Math.max(2, color_depth);
-                var clear_code, eof_code, free_slot, n_bits, max_code, cur_accum, cur_bits, hshift, accum, htab, codetab, remaining, cur_pixel;
-                var masks = [0, 1, 3, 7, 15, 31, 63, 127, 255, 511, 1023, 2047, 4095, 8191, 16383, 32767, 65535];
-                var a_count;
-                var EOF = -1;
-                var BITS = 12;
-                var HSIZE = 5003;
-                this.encode = function(out) {
-                    out.writeByte(init_code_size);
-                    remaining = width * height;
-                    cur_pixel = 0;
-                    compress(init_code_size + 1, out);
-                    out.writeByte(0);
-                }
-                function char_out(c, out) {
-                    accum[a_count++] = c;
-                    if (a_count >= 254) flush_char(out);
-                }
-                function cl_block(out) {
-                    cl_hash(HSIZE);
-                    free_slot = clear_code + 2;
-                    var clear_flg = true;
-                    output(clear_code, out);
-                }
-                function cl_hash(hsize) {
-                    for (var i = 0; i < hsize; ++i) htab[i] = -1;
-                }
-                function compress(init_bits, out) {
-                    var fcode, c, i, ent, disp, hsize_reg;
-                    n_bits = init_bits;
-                    max_code = (1 << n_bits) - 1;
-                    clear_code = 1 << (init_bits - 1);
-                    eof_code = clear_code + 1;
-                    free_slot = clear_code + 2;
-                    a_count = 0;
-                    ent = next_pixel();
-                    hshift = 0;
-                    for (fcode = HSIZE; fcode < 65536; fcode *= 2) ++hshift;
-                    hshift = 8 - hshift;
-                    hsize_reg = HSIZE;
-                    cl_hash(hsize_reg);
-                    output(clear_code, out);
-                    outer_loop: while ((c = next_pixel()) != EOF) {
-                        fcode = (c << BITS) + ent;
-                        i = (c << hshift) ^ ent;
-                        if (htab[i] == fcode) {
-                            ent = codetab[i];
-                            continue;
-                        } else if (htab[i] >= 0) {
-                            disp = hsize_reg - i;
-                            if (i == 0) disp = 1;
-                            do {
-                                if ((i -= disp) < 0) i += hsize_reg;
-                                if (htab[i] == fcode) {
-                                    ent = codetab[i];
-                                    continue outer_loop;
-                                }
-                            } while (htab[i] >= 0);
-                        }
-                        output(ent, out);
-                        ent = c;
-                        if (free_slot < (1 << BITS)) {
-                            codetab[i] = free_slot++;
-                            htab[i] = fcode;
-                        } else cl_block(out);
-                    }
-                    output(ent, out);
-                    output(eof_code, out);
-                }
-                function flush_char(out) {
-                    if (a_count > 0) {
-                        out.writeByte(a_count);
-                        out.writeBytes(accum, 0, a_count);
-                        a_count = 0;
-                    }
-                }
-                function next_pixel() {
-                    if (remaining == 0) return EOF;
-                    --remaining;
-                    var pix = pixels[cur_pixel++];
-                    return pix & 0xff;
-                }
-                function output(code, out) {
-                    cur_accum &= masks[cur_bits];
-                    if (cur_bits > 0) cur_accum |= (code << cur_bits);
-                    else cur_accum = code;
-                    cur_bits += n_bits;
-                    while (cur_bits >= 8) {
-                        char_out(cur_accum & 0xff, out);
-                        cur_accum >>= 8;
-                        cur_bits -= 8;
-                    }
-                    if (free_slot > max_code || clear_code) {
-                        if (clear_code) {
-                            max_code = (1 << (n_bits = init_bits)) - 1;
-                            clear_code = false;
-                        } else {
-                            ++n_bits;
-                            if (n_bits == BITS) max_code = (1 << BITS);
-                            else max_code = (1 << n_bits) - 1;
-                        }
-                    }
-                    if (code == eof_code) {
-                        while (cur_bits > 0) {
-                            char_out(cur_accum & 0xff, out);
-                            cur_accum >>= 8;
-                            cur_bits -= 8;
-                        }
-                        flush_char(out);
-                    }
-                }
-                (function() {
-                    accum = new Array(256);
-                    htab = new Array(HSIZE);
-                    codetab = new Array(HSIZE);
-                    cur_accum = 0;
-                    cur_bits = 0;
-                }());
-            }
-            function GIFEncoder() {
-                this.width; this.height;
-                this.transparent = null;
-                this.transIndex;
-                this.repeat = -1;
-                this.delay = 0;
-                this.image = null;
-                this.pixels = null;
-                this.indexedPixels = null;
-                this.colorDepth;
-                this.colorTab = null;
-                this.usedEntry = new Array();
-                this.palSize = 7;
-                this.dispose = -1;
-                this.firstFrame = true;
-                this.sample = 10;
-                this.out;
-            }
-            GIFEncoder.prototype.setDelay = function(ms) { this.delay = Math.round(ms / 10); };
-            GIFEncoder.prototype.setDispose = function(code) { if (code >= 0) this.dispose = code; };
-            GIFEncoder.prototype.setRepeat = function(iter) { if (iter >= 0) this.repeat = iter; };
-            GIFEncoder.prototype.setTransparent = function(c) { this.transparent = c; };
-            GIFEncoder.prototype.addFrame = function(im) {
-                this.image = im;
-                getImagePixels(this);
-                analyzePixels(this);
-                if (this.firstFrame) {
-                    writeLSD(this);
-                    writePalette(this);
-                    if (this.repeat >= 0) writeNetscapeExt(this);
-                }
-                writeGraphicCtrlExt(this);
-                writeImageDesc(this);
-                if (!this.firstFrame) writePalette(this);
-                writePixels(this);
-                this.firstFrame = false;
-            };
-            GIFEncoder.prototype.finish = function() { this.out.writeByte(0x3b); return this.out.data; };
-            GIFEncoder.prototype.setFrameRate = function(fps) { this.delay = Math.round(100 / fps); };
-            GIFEncoder.prototype.setQuality = function(quality) { if (quality < 1) quality = 1; this.sample = quality; };
-            GIFEncoder.prototype.start = function() {
-                this.out = {
-                    data: '',
-                    writeByte: function(b) { this.data += String.fromCharCode(b) },
-                    writeBytes: function(data, offset, length) { for (var i = 0; i < length; i++) this.writeByte(data[i]); }
-                };
-                this.out.writeBytes("GIF89a".split(''), 0, 6);
-            };
-            function getImagePixels(self) {
-                var w = self.width;
-                var h = self.height;
-                self.pixels = new Uint8Array(w * h * 3);
-                var data = self.image;
-                var src = 0;
-                var p = 0;
-                for (var i = 0; i < h; i++) {
-                    for (var j = 0; j < w; j++) {
-                        self.pixels[p++] = data[src++];
-                        self.pixels[p++] = data[src++];
-                        self.pixels[p++] = data[src++];
-                        src++;
-                    }
-                }
-            }
-            function analyzePixels(self) {
-                var len = self.pixels.length;
-                var nPix = len / 3;
-                self.indexedPixels = new Uint8Array(nPix);
-                var nq = new NeuQuant(self.pixels, self.sample);
-                self.colorTab = nq.colorMap();
-                var k = 0;
-                for (var j = 0; j < nPix; j++) {
-                    var index = nq.lookup(self.pixels[k++] & 0xff, self.pixels[k++] & 0xff, self.pixels[k++] & 0xff);
-                    self.usedEntry[index] = true;
-                    self.indexedPixels[j] = index;
-                }
-                self.pixels = null;
-                self.colorDepth = 8;
-                self.palSize = 7;
-                if (self.transparent != null) {
-                    self.transIndex = findClosest(self, self.transparent);
-                }
-            }
-            function findClosest(self, c) {
-                if (self.colorTab == null) return -1;
-                var r = (c & 0xFF0000) >> 16;
-                var g = (c & 0x00FF00) >> 8;
-                var b = (c & 0x0000FF);
-                var minpos = 0;
-                var dmin = 256 * 256 * 256;
-                var len = self.colorTab.length;
-                for (var i = 0; i < len;) {
-                    var dr = r - (self.colorTab[i++] & 0xff);
-                    var dg = g - (self.colorTab[i++] & 0xff);
-                    var db = b - (self.colorTab[i] & 0xff);
-                    var d = dr * dr + dg * dg + db * db;
-                    var index = i / 3;
-                    if (self.usedEntry[index] && (d < dmin)) {
-                        dmin = d;
-                        minpos = index;
-                    }
-                    i++;
-                }
-                return minpos;
-            }
-            function writeLSD(self) {
-                writeShort(self, self.width);
-                writeShort(self, self.height);
-                self.out.writeByte(0x80 | 0x70 | 0x00 | self.palSize);
-                self.out.writeByte(0);
-                self.out.writeByte(0);
-            }
-            function writePalette(self) {
-                self.out.writeBytes(self.colorTab, 0, self.colorTab.length);
-                var n = (3 * 256) - self.colorTab.length;
-                for (var i = 0; i < n; i++) self.out.writeByte(0);
-            }
-            function writeNetscapeExt(self) {
-                self.out.writeByte(0x21);
-                self.out.writeByte(0xff);
-                self.out.writeByte(11);
-                self.out.writeBytes("NETSCAPE2.0".split(''), 0, 11);
-                self.out.writeByte(3);
-                self.out.writeByte(1);
-                writeShort(self, self.repeat);
-                self.out.writeByte(0);
-            }
-            function writeGraphicCtrlExt(self) {
-                self.out.writeByte(0x21);
-                self.out.writeByte(0xf9);
-                self.out.writeByte(4);
-                var transp, disp;
-                if (self.transparent == null) {
-                    transp = 0;
-                    disp = 0;
-                } else {
-                    transp = 1;
-                    disp = 2;
-                }
-                if (self.dispose >= 0) disp = self.dispose & 7;
-                disp <<= 2;
-                self.out.writeByte(0 | disp | 0 | transp);
-                writeShort(self, self.delay);
-                self.out.writeByte(self.transIndex);
-                self.out.writeByte(0);
-            }
-            function writeImageDesc(self) {
-                self.out.writeByte(0x2c);
-                writeShort(self, 0);
-                writeShort(self, 0);
-                writeShort(self, self.width);
-                writeShort(self, self.height);
-                if (self.firstFrame) self.out.writeByte(0);
-                else self.out.writeByte(0x80 | 0 | 0 | 0 | self.palSize);
-            }
-            function writePixels(self) {
-                var enc = new LZWEncoder(self.width, self.height, self.indexedPixels, self.colorDepth);
-                enc.encode(self.out);
-            }
-            function writeShort(self, pValue) {
-                self.out.writeByte(pValue & 0xFF);
-                self.out.writeByte((pValue >> 8) & 0xFF);
-            }
-            var encoder;
-            self.onmessage = function(e) {
-                var data = e.data;
-                switch (data.command) {
-                    case 'start':
-                        encoder = new GIFEncoder();
-                        encoder.width = data.width;
-                        encoder.height = data.height;
-                        encoder.setRepeat(data.repeat);
-                        encoder.setDelay(data.delay);
-                        encoder.setQuality(data.quality);
-                        encoder.start();
-                        postMessage({ 'type': 'start', 'data': encoder.out.data });
-                        break;
-                    case 'frame':
-                        encoder.addFrame(data.frame);
-                        postMessage({ 'type': 'progress', 'data': encoder.out.data });
-                        break;
-                    case 'finish':
-                        var data = encoder.finish();
-                        postMessage({ 'type': 'finish', 'data': data });
-                        break;
-                }
-            };
-        `;
-
         const startCaptureBtn = document.getElementById('startCaptureBtn');
         const startRecordBtn = document.getElementById('startRecordBtn');
         const stopRecordBtn = document.getElementById('stopRecordBtn');
@@ -675,23 +138,37 @@
         const downloadArea = document.getElementById('downloadArea');
         const downloadLink = document.getElementById('downloadLink');
         const permissionError = document.getElementById('permissionError');
-        const progressArea = document.getElementById('progressArea');
-        const progressBar = document.getElementById('progressBar');
+        const pointerHighlighter = document.getElementById('pointerHighlighter');
+
+        // Mouse Tracker Event Listeners
+        window.addEventListener('mousemove', (e) => {
+            if (isRecording) {
+                pointerHighlighter.style.left = e.clientX + 'px';
+                pointerHighlighter.style.top = e.clientY + 'px';
+            }
+        });
+
+        window.addEventListener('mousedown', () => {
+            if (isRecording) {
+                pointerHighlighter.classList.add('clicking');
+            }
+        });
+
+        window.addEventListener('mouseup', () => {
+            if (isRecording) {
+                pointerHighlighter.classList.remove('clicking');
+            }
+        });
+
+
+
 
         let stream = null;
         let mediaRecorder = null;
         let recordedChunks = [];
-        let gifRecorder = null;
-        let isRecording = false;
-        let workerURL = null;
 
-        // Create a URL for the embedded worker script
-        try {
-            const blob = new Blob([gifWorkerSource], { type: 'application/javascript' });
-            workerURL = URL.createObjectURL(blob);
-        } catch (e) {
-            console.error("Failed to create worker URL:", e);
-        }
+        let isRecording = false;
+
 
         // Event Listeners
         startCaptureBtn.addEventListener('click', startCapture);
@@ -721,7 +198,7 @@
                 };
 
                 startCaptureBtn.disabled = true;
-                document.querySelectorAll('input[name="format"]').forEach(radio => radio.disabled = false);
+
 
             } catch (error) {
                 console.error("Error starting screen capture:", error);
@@ -743,22 +220,16 @@
                 return;
             }
             
-            const format = document.querySelector('input[name="format"]:checked').value;
             recordedChunks = [];
             isRecording = true;
-
-            if (format === 'mp4') {
-                startMp4Recording();
-            } else {
-                startGifRecording();
-            }
+            pointerHighlighter.style.display = 'block';
+            startMp4Recording();
 
             previewVideo.parentElement.classList.add('glowing-border');
-            statusText.textContent = `Recording in progress... (Format: ${format.toUpperCase()})`;
+            statusText.textContent = `Recording in progress... (Format: MP4)`;
             startRecordBtn.classList.add('hidden');
             stopRecordBtn.classList.remove('hidden');
             startRecordBtn.disabled = true;
-            document.querySelectorAll('input[name="format"]').forEach(radio => radio.disabled = true);
         }
 
         /**
@@ -767,17 +238,12 @@
         function stopRecording() {
             if (!isRecording) return;
             isRecording = false; // Signal all loops to stop
+            pointerHighlighter.style.display = 'none';
 
-            const format = document.querySelector('input[name="format"]:checked').value;
-
-            if (format === 'mp4' && mediaRecorder) {
+            if (mediaRecorder) {
                 statusArea.classList.add('animate-pulse');
                 statusText.textContent = "Processing MP4 video...";
                 mediaRecorder.stop();
-            } else if (format === 'gif' && gifRecorder) {
-                statusText.textContent = "Encoding GIF... This may take a moment.";
-                progressArea.classList.remove('hidden');
-                gifRecorder.render();
             }
             
              if (stream) {
@@ -818,60 +284,6 @@
         }
 
         /**
-         * Configures and starts gif.js for GIF recording.
-         */
-        function startGifRecording() {
-            if (!workerURL) {
-                statusText.textContent = "Error: GIF worker could not be initialized.";
-                return;
-            }
-            // Use actual video dimensions for higher quality GIFs
-            const videoWidth = previewVideo.videoWidth;
-            const videoHeight = previewVideo.videoHeight;
-            
-            gifRecorder = new GIF({
-                workers: 2,
-                quality: 10,
-                width: videoWidth,
-                height: videoHeight,
-                workerScript: workerURL
-            });
-
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            canvas.width = videoWidth;
-            canvas.height = videoHeight;
-
-            const addFrame = () => {
-                if (!isRecording) return;
-                try {
-                    ctx.drawImage(previewVideo, 0, 0, canvas.width, canvas.height);
-                    // The gif.js library expects the canvas context itself, not the raw pixel data.
-                    gifRecorder.addFrame(ctx, { copy: true, delay: 100 });
-                } catch (e) {
-                    console.error("Error adding frame to GIF:", e);
-                    // Stop recording on error to prevent an infinite loop of errors
-                    if (isRecording) stopRecording();
-                }
-                if (isRecording) setTimeout(addFrame, 100);
-            };
-            addFrame();
-
-            gifRecorder.on('progress', event => {
-                const percentage = Math.round(event * 100);
-                progressBar.style.width = percentage + '%';
-                progressBar.textContent = percentage + '%';
-            });
-
-            gifRecorder.on('finished', blob => {
-                const url = URL.createObjectURL(blob);
-                setupDownload(url, 'screen-recording.gif');
-                progressArea.classList.add('hidden');
-                resetToCaptureState();
-            });
-        }
-
-        /**
          * Makes the download area visible with the correct file link.
          * @param {string} url - The object URL of the file blob.
          * @param {string} filename - The default filename for the download.
@@ -893,9 +305,7 @@
             downloadLink.href = '#';
             statusText.textContent = "1. Click 'Start Capture' and select a screen, window, or tab to share.";
             
-            progressArea.classList.add('hidden');
-            progressBar.style.width = '0%';
-            progressBar.textContent = '0%';
+
 
             resetToCaptureState();
         }
@@ -909,11 +319,12 @@
             startRecordBtn.disabled = true;
             startRecordBtn.classList.remove('hidden');
             stopRecordBtn.classList.add('hidden');
-            document.querySelectorAll('input[name="format"]').forEach(radio => radio.disabled = false);
+
             statusArea.classList.remove('animate-pulse');
             isRecording = false;
+            pointerHighlighter.style.display = 'none';
             mediaRecorder = null;
-            gifRecorder = null;
+
         }
 
     </script>
